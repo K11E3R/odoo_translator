@@ -1,4 +1,4 @@
-# PO Translator v2.0
+# PO Translator v1.0
 
 Professional Odoo translation tool with AI-powered translations, caching, and advanced features.
 

@@ -244,7 +244,7 @@ class Sidebar:
         
         ctk.CTkLabel(
             footer,
-            text="v2.0 • Made with ❤️ for Odoo",
+            text="v1.0 • Made with ❤️ for Odoo",
             font=ctk.CTkFont(size=11),
             text_color="#666666"
         ).pack()
