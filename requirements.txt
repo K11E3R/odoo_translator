@@ -5,6 +5,7 @@ six>=1.16.0
 
 # AI Translation
 google-generativeai>=0.3.0
+googletrans==4.0.0-rc1
 
 # Modern UI
 customtkinter>=5.2.0
