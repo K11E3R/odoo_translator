@@ -79,6 +79,13 @@ class Translator:
         "pt": {"name": "Portuguese"},
         "nl": {"name": "Dutch"},
         "ar": {"name": "Arabic"},
+        "ca": {"name": "Catalan"},
+        "ro": {"name": "Romanian"},
+        "da": {"name": "Danish"},
+        "sv": {"name": "Swedish"},
+        "no": {"name": "Norwegian"},
+        "fi": {"name": "Finnish"},
+        "gl": {"name": "Galician"},
     }
 
     ODOO_TERMS = {

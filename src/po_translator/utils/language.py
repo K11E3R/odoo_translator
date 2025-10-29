@@ -7,6 +7,7 @@ from functools import lru_cache
 from typing import Optional, Tuple
 
 from langdetect import LangDetectException, detect_langs
+from langid.langid import LanguageIdentifier, model
 
 try:
     from googletrans import Translator as GoogleTranslator  # type: ignore
@@ -45,6 +46,36 @@ def _normalize_lang_code(code: Optional[str]) -> Optional[str]:
     if primary == "zh":  # Normalise Chinese variants to zh
         return "zh"
     return primary
+
+
+@lru_cache(maxsize=2048)
+def _detect_with_langid(text: str) -> Tuple[Optional[str], float]:
+    """Detect language using langid with caching and normalization."""
+    if not text or not text.strip():
+        return None, 0.0
+
+    lang, confidence = _LANGID_IDENTIFIER.classify(text)
+    normalized = _normalize_lang_code(lang)
+
+    # langid occasionally reports related romance languages with slightly better scores.
+    # Boost French probability when romance variants share the vocabulary.
+    if normalized in {"ca", "ro", "it", "es", "pt"}:
+        french_bias = sum(1 for word in FRENCH_INDICATORS if word in text.lower())
+        if french_bias >= 3:
+            normalized = "fr"
+            confidence = max(confidence, 0.82)
+
+    if normalized in {"da", "no", "sv"}:
+        english_bias = sum(1 for word in ENGLISH_INDICATORS if word in text.lower())
+        if english_bias:
+            normalized = "en"
+            confidence = max(confidence, 0.8)
+
+    if normalized in {"gl", "ca"} and "commande" in text.lower():
+        normalized = "fr"
+        confidence = max(confidence, 0.8)
+
+    return normalized, float(confidence)
 
 
 @lru_cache(maxsize=2048)
@@ -93,6 +124,11 @@ def detect_language_details(text: str, min_confidence: float = 0.7) -> Tuple[Opt
     if heuristic_lang and heuristic_conf >= min_confidence:
         return heuristic_lang, heuristic_conf
 
+    # Leverage statistical detection for broader coverage
+    langid_lang, langid_conf = _detect_with_langid(text)
+    if langid_lang and langid_conf >= min_confidence:
+        return langid_lang, langid_conf
+
     # Use Google Translate detection when available
     google_lang, google_conf = _detect_with_google(text)
     if google_lang and google_conf >= min_confidence:
@@ -119,7 +155,10 @@ def detect_language_details(text: str, min_confidence: float = 0.7) -> Tuple[Opt
                 return detected, prob
             return detected, prob
 
-    return google_lang or heuristic_lang, max(google_conf, heuristic_conf)
+    if langid_lang:
+        return langid_lang, langid_conf
+
+    return google_lang or heuristic_lang, max(google_conf, heuristic_conf, langid_conf)
 
 
 def detect_language(text: str, min_confidence: float = 0.7) -> Optional[str]:
@@ -232,3 +271,22 @@ def validate_po_entry(entry):
     """
     return bool(entry.msgid)
 
+# Core language set we care about for Odoo translations
+PRIMARY_LANGUAGES = ["en", "fr", "es", "de", "it", "pt", "nl", "ar"]
+
+# Broader family to help disambiguate romance/germanic texts that frequently appear
+RELATED_LANGUAGES = PRIMARY_LANGUAGES + [
+    "ca",  # Catalan
+    "ro",  # Romanian
+    "da",  # Danish
+    "sv",  # Swedish
+    "no",  # Norwegian
+    "fi",  # Finnish
+    "gl",  # Galician
+]
+
+_LANGID_IDENTIFIER = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+_LANGID_IDENTIFIER.set_languages(RELATED_LANGUAGES)
+
+_LANGID_IDENTIFIER = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+_LANGID_IDENTIFIER.set_languages(RELATED_LANGUAGES)

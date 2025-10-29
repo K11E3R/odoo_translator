@@ -45,7 +45,7 @@ class Toolbar:
             fg_color=THEME.INPUT_BG,
             text_color=THEME.TEXT_PRIMARY,
             placeholder_text_color=THEME.TEXT_PLACEHOLDER,
-            font=ctk.CTkFont(size=13)
+            font=THEME.font(size=13)
         )
         self.search_entry.grid(row=0, column=0, sticky="ew", padx=(0, 15))
         self.search_entry.bind("<KeyRelease>", lambda e: self.callbacks['search']())
@@ -61,7 +61,7 @@ class Toolbar:
                 variable=self.filter_var,
                 value=value,
                 command=self.callbacks['apply_filter'],
-                font=ctk.CTkFont(size=12),
+                font=THEME.font(size=12),
                 text_color=THEME.TEXT_SECONDARY,
                 fg_color=THEME.ACCENT_PRIMARY,
                 hover_color=THEME.ACCENT_PRIMARY_HOVER,
@@ -81,7 +81,7 @@ class Toolbar:
             fg_color=THEME.SURFACE_RAISED,
             hover_color=THEME.SURFACE_HOVER,
             text_color=THEME.TEXT_PRIMARY,
-            font=ctk.CTkFont(size=12)
+            font=THEME.font(size=12, weight="bold")
         ).pack(side="left", padx=4)
 
         ctk.CTkButton(
@@ -93,7 +93,7 @@ class Toolbar:
             fg_color=THEME.SURFACE_RAISED,
             hover_color=THEME.SURFACE_HOVER,
             text_color=THEME.TEXT_PRIMARY,
-            font=ctk.CTkFont(size=12)
+            font=THEME.font(size=12)
         ).pack(side="left", padx=4)
     
     def get_search_query(self):

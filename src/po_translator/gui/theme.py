@@ -2,58 +2,68 @@
 
 from __future__ import annotations
 
+import customtkinter as ctk
+
 
 class Theme:
     """Reusable color palette for the PO Translator interface."""
 
     # Application backgrounds
-    BACKGROUND = "#0b1220"
-    SURFACE = "#111b2f"
-    SURFACE_ALT = "#16243d"
-    SURFACE_RAISED = "#1d2d4c"
-    SURFACE_HOVER = "#24375f"
+    BACKGROUND = "#f5f7fb"
+    SURFACE = "#ffffff"
+    SURFACE_ALT = "#eef2ff"
+    SURFACE_RAISED = "#f2f6ff"
+    SURFACE_HOVER = "#dbeafe"
 
     # Sidebar
-    SIDEBAR_BG = "#0f172a"
-    SIDEBAR_SCROLLBAR = "#1a2742"
-    SIDEBAR_SCROLLBAR_HOVER = "#213354"
+    SIDEBAR_BG = "#f9fbff"
+    SIDEBAR_SCROLLBAR = "#cbd5f5"
+    SIDEBAR_SCROLLBAR_HOVER = "#94a3ff"
 
     # Typography
-    TEXT_PRIMARY = "#f8fafc"
-    TEXT_SECONDARY = "#cbd5f5"
-    TEXT_MUTED = "#94a3b8"
-    TEXT_PLACEHOLDER = "#64748b"
+    TEXT_PRIMARY = "#1f2937"
+    TEXT_SECONDARY = "#334155"
+    TEXT_MUTED = "#64748b"
+    TEXT_PLACEHOLDER = "#94a3b8"
 
     # Accent colors
-    ACCENT_PRIMARY = "#8b5cf6"
-    ACCENT_PRIMARY_HOVER = "#7c3aed"
-    ACCENT_SECONDARY = "#38bdf8"
-    ACCENT_SECONDARY_HOVER = "#0ea5e9"
-    ACCENT_SUCCESS = "#34d399"
+    ACCENT_PRIMARY = "#2563eb"
+    ACCENT_PRIMARY_HOVER = "#1d4ed8"
+    ACCENT_SECONDARY = "#0ea5e9"
+    ACCENT_SECONDARY_HOVER = "#0284c7"
+    ACCENT_SUCCESS = "#10b981"
     ACCENT_SUCCESS_HOVER = "#059669"
-    ACCENT_WARNING = "#fbbf24"
-    ACCENT_DANGER = "#f87171"
+    ACCENT_WARNING = "#f59e0b"
+    ACCENT_DANGER = "#ef4444"
 
     # Table specific colors
-    TABLE_HEADER_BG = "#15213a"
-    TABLE_ROW_BG = "#111c30"
-    TABLE_ROW_ALT_BG = "#0d1626"
-    TABLE_ROW_SELECTED = "#1f2d4f"
-    TABLE_SOURCE_MISMATCH = "#1b2b4a"
-    TABLE_TRANSLATION_MISSING = "#3b1a2f"
-    TABLE_TRANSLATION_MISMATCH = "#332612"
+    TABLE_HEADER_BG = "#e0e7ff"
+    TABLE_ROW_BG = "#ffffff"
+    TABLE_ROW_ALT_BG = "#f8fafc"
+    TABLE_ROW_SELECTED = "#dbeafe"
+    TABLE_SOURCE_MISMATCH = "#fee2e2"
+    TABLE_TRANSLATION_MISSING = "#fef3c7"
+    TABLE_TRANSLATION_MISMATCH = "#fce7f3"
 
     # Badges and chips
-    BADGE_SOURCE = "#7dd3fc"
-    BADGE_SOURCE_MISMATCH = "#fde047"
-    BADGE_TRANSLATION = "#6ee7b7"
-    BADGE_TRANSLATION_MISMATCH = "#fcd34d"
-    MODULE_CHIP_BG = "#1f2b46"
-    MODULE_CHIP_TEXT = "#7dd3fc"
+    BADGE_SOURCE = "#bfdbfe"
+    BADGE_SOURCE_MISMATCH = "#facc15"
+    BADGE_TRANSLATION = "#bbf7d0"
+    BADGE_TRANSLATION_MISMATCH = "#f9a8d4"
+    MODULE_CHIP_BG = "#e2e8f0"
+    MODULE_CHIP_TEXT = "#2563eb"
 
-    DIVIDER = "#1f2937"
-    INPUT_BG = "#1a2540"
-    INPUT_HOVER = "#223156"
+    DIVIDER = "#e2e8f0"
+    INPUT_BG = "#f1f5f9"
+    INPUT_HOVER = "#e2e8f0"
+
+    FONT_FAMILY = "Segoe UI"
+
+    @staticmethod
+    def font(size: int = 12, weight: str = "normal") -> ctk.CTkFont:
+        """Return a themed font instance for consistent typography."""
+
+        return ctk.CTkFont(family=Theme.FONT_FAMILY, size=size, weight=weight)
 
 
 THEME = Theme()

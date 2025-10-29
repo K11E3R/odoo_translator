@@ -56,14 +56,14 @@ class Sidebar:
         ctk.CTkLabel(
             header,
             text="⚡ PO Translator",
-            font=ctk.CTkFont(size=24, weight="bold"),
+            font=THEME.font(size=24, weight="bold"),
             text_color=THEME.TEXT_PRIMARY
         ).pack(anchor="w")
 
         ctk.CTkLabel(
             header,
             text="Professional Odoo Translation Tool",
-            font=ctk.CTkFont(size=12),
+            font=THEME.font(size=12),
             text_color=THEME.TEXT_MUTED
         ).pack(anchor="w", pady=(8, 0))
     
@@ -138,7 +138,7 @@ class Sidebar:
         ctk.CTkLabel(
             lang_frame,
             text="Source:",
-            font=ctk.CTkFont(size=10),
+            font=THEME.font(size=10),
             text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=0, column=0, sticky="w", pady=(0, 4))
@@ -154,7 +154,7 @@ class Sidebar:
             button_color=THEME.ACCENT_PRIMARY,
             button_hover_color=THEME.ACCENT_PRIMARY_HOVER,
             text_color=THEME.TEXT_PRIMARY,
-            font=ctk.CTkFont(size=11)
+            font=THEME.font(size=11)
         )
         self.source_lang_menu.grid(row=1, column=0, sticky="ew", padx=(0, 5))
         
@@ -162,7 +162,7 @@ class Sidebar:
         ctk.CTkLabel(
             lang_frame,
             text="Target:",
-            font=ctk.CTkFont(size=10),
+            font=THEME.font(size=10),
             text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=0, column=1, sticky="w", pady=(0, 4))
@@ -178,7 +178,7 @@ class Sidebar:
             button_color=THEME.ACCENT_PRIMARY,
             button_hover_color=THEME.ACCENT_PRIMARY_HOVER,
             text_color=THEME.TEXT_PRIMARY,
-            font=ctk.CTkFont(size=11)
+            font=THEME.font(size=11)
         )
         self.target_lang_menu.grid(row=1, column=1, sticky="ew", padx=(5, 0))
         
@@ -189,7 +189,7 @@ class Sidebar:
             text="Auto-detect & correct language",
             variable=self.auto_detect_var,
             command=self.callbacks.get('language_changed'),
-            font=ctk.CTkFont(size=11),
+            font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED
         )
         self.auto_detect_check.grid(row=10, column=0, padx=20, pady=(0, 8), sticky="w")
@@ -199,7 +199,7 @@ class Sidebar:
             text="🌐  Translate All",
             command=self.callbacks['translate_all'],
             height=55,
-            font=ctk.CTkFont(size=16, weight="bold"),
+            font=THEME.font(size=16, weight="bold"),
             fg_color=THEME.ACCENT_SUCCESS,
             hover_color=THEME.ACCENT_SUCCESS_HOVER,
             corner_radius=8,
@@ -212,7 +212,7 @@ class Sidebar:
             text="✓  Translate Selected",
             command=self.callbacks['translate_selected'],
             height=42,
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=THEME.font(size=13, weight="bold"),
             fg_color=THEME.ACCENT_SECONDARY,
             hover_color=THEME.ACCENT_SECONDARY_HOVER,
             corner_radius=8,
@@ -236,6 +236,7 @@ class Sidebar:
             height=38,
             fg_color=THEME.SURFACE_RAISED,
             hover_color=THEME.SURFACE_HOVER,
+            font=THEME.font(size=12, weight="bold"),
             state="disabled"
         )
         self.btn_undo.grid(row=0, column=0, padx=(0, 4), sticky="ew")
@@ -247,6 +248,7 @@ class Sidebar:
             height=38,
             fg_color=THEME.SURFACE_RAISED,
             hover_color=THEME.SURFACE_HOVER,
+            font=THEME.font(size=12, weight="bold"),
             state="disabled"
         )
         self.btn_redo.grid(row=0, column=1, padx=(4, 0), sticky="ew")
@@ -257,7 +259,8 @@ class Sidebar:
             command=self.callbacks['delete_selected'],
             height=38,
             fg_color=THEME.ACCENT_DANGER,
-            hover_color=self._darken_color(THEME.ACCENT_DANGER),
+            hover_color=THEME.ACCENT_DANGER_HOVER,
+            font=THEME.font(size=12, weight="bold"),
             state="disabled"
         )
         self.btn_delete.grid(row=1, column=0, columnspan=2, pady=(8, 0), sticky="ew")
@@ -291,22 +294,24 @@ class Sidebar:
         ctk.CTkLabel(
             footer,
             text="v1.0 • Made with ❤️ for Odoo",
-            font=ctk.CTkFont(size=11),
+            font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED
         ).pack()
-    
+
     def create_section_label(self, text, row):
         """Create section label with better styling"""
         ctk.CTkLabel(
             self.frame,
             text=text,
-            font=ctk.CTkFont(size=12, weight="bold"),
+            font=THEME.font(size=12, weight="bold"),
             text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=row, column=0, padx=24, pady=(24, 12), sticky="w")
     
     def create_button(self, text, command, row, color, *, hover=None, height=44, disabled=False):
         """Create button with improved styling"""
+        text_color = self._button_text_color(color)
+
         btn = ctk.CTkButton(
             self.frame,
             text=text,
@@ -316,8 +321,8 @@ class Sidebar:
             hover_color=hover or self._darken_color(color),
             corner_radius=10,
             border_width=0,
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=THEME.TEXT_PRIMARY,
+            font=THEME.font(size=13, weight="bold"),
+            text_color=text_color,
             state="disabled" if disabled else "normal"
         )
         btn.grid(row=row, column=0, padx=24, pady=(0, 10), sticky="ew")
@@ -331,7 +336,7 @@ class Sidebar:
         ctk.CTkLabel(
             frame,
             text=label,
-            font=ctk.CTkFont(size=11),
+            font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).pack(side="left")
@@ -339,7 +344,7 @@ class Sidebar:
         lbl = ctk.CTkLabel(
             frame,
             text=value,
-            font=ctk.CTkFont(size=13, weight="bold"),
+            font=THEME.font(size=13, weight="bold"),
             text_color=color,
             anchor="e"
         )
@@ -352,6 +357,17 @@ class Sidebar:
         r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
         r, g, b = max(0, r-30), max(0, g-30), max(0, b-30)
         return f"#{r:02x}{g:02x}{b:02x}"
+
+    def _button_text_color(self, hex_color):
+        """Choose white or dark text based on background brightness."""
+
+        hex_color = hex_color.lstrip('#')
+        if len(hex_color) != 6:
+            return THEME.TEXT_PRIMARY
+
+        r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+        brightness = (0.299 * r) + (0.587 * g) + (0.114 * b)
+        return "#ffffff" if brightness < 160 else THEME.TEXT_PRIMARY
     
     def update_stats(self, total, translated, untranslated, selected):
         """Update statistics display"""

@@ -2,6 +2,7 @@
 Main Application
 Orchestrates all GUI components and business logic
 """
+import math
 import os
 import threading
 from collections import Counter
@@ -21,12 +22,12 @@ from po_translator.utils.language import detect_language, detect_language_detail
 from po_translator.utils.logger import get_logger
 
 from .components import Sidebar, Toolbar, TranslationTable, StatusBar
-from .dialogs import EditDialog, ExportDialog, StatisticsDialog
+from .dialogs import EditDialog, ExportDialog, StatisticsDialog, LanguageMismatchDialog
 from .widgets import UndoManager
 from .theme import THEME, apply_root_theme
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,8 @@ class POTranslatorApp:
         self.unsaved = False
         self.translating = False
         self._language_analysis_cache: Dict[int, tuple] = {}
+        self.current_page = 1
+        self.page_size = 50
         
         # Window
         self.root = ctk.CTk()
@@ -106,7 +109,9 @@ class POTranslatorApp:
             'delete_selected': self.delete_selected,
             'edit': self.edit_entry,
             'selection_changed': self.on_selection_changed,
-            'language_changed': self.on_language_changed
+            'language_changed': self.on_language_changed,
+            'change_page': self.change_page,
+            'change_page_size': self.change_page_size,
         }
         
         # Create components
@@ -217,6 +222,7 @@ class POTranslatorApp:
         self.table.clear_selection()
         self.undo_manager.clear()
         self.unsaved = False
+        self.current_page = 1
         self.populate()
 
         self.sidebar.btn_import.configure(state="normal")
@@ -237,7 +243,20 @@ class POTranslatorApp:
     def populate(self):
         """Populate table"""
         status_map = self.build_language_status_map(self.filtered_entries)
-        self.table.populate(self.filtered_entries, self.merger, status_map=status_map)
+        total_entries = len(self.filtered_entries)
+        total_pages = self._compute_total_pages(total_entries)
+        if self.current_page > total_pages:
+            self.current_page = total_pages
+        if self.current_page < 1:
+            self.current_page = 1
+
+        self.table.populate(
+            self.filtered_entries,
+            self.merger,
+            status_map=status_map,
+            page=self.current_page,
+            page_size=self.page_size,
+        )
         self.update_stats()
         self.update_entry_status_message()
 
@@ -340,43 +359,32 @@ class POTranslatorApp:
         if not mismatched_sources and not mismatched_targets:
             return True, False, []
 
-        lang_names = {code: data.get("name", code.upper()) for code, data in self.translator.LANGUAGES.items()}
-        source_counts = Counter(s.source_lang for s in mismatched_sources if s.source_lang)
-        target_counts = Counter(s.translation_lang for s in mismatched_targets if s.translation_lang)
+        lang_names = {
+            code: data.get("name", code.upper())
+            for code, data in self.translator.LANGUAGES.items()
+        }
 
-        def format_counts(counts: Counter) -> str:
-            if not counts:
-                return "unknown"
-            parts = []
-            for code, count in counts.items():
-                label = lang_names.get(code, code.upper())
-                parts.append(f"{label} × {count}")
-            return ", ".join(parts)
+        dialog = LanguageMismatchDialog(
+            self.root,
+            statuses,
+            expected_source,
+            expected_target,
+            lang_names,
+        )
+        self.root.wait_window(dialog)
 
-        message_lines: List[str] = [
-            "Some entries do not match the selected language pair:",
-            "",
-        ]
-
-        if mismatched_sources:
-            expected = lang_names.get(expected_source, expected_source.upper())
-            message_lines.append(f"• Source expected {expected}, detected {format_counts(source_counts)}")
-
-        if mismatched_targets:
-            expected = lang_names.get(expected_target, expected_target.upper())
-            message_lines.append(f"• Translation expected {expected}, detected {format_counts(target_counts)}")
-
-        message_lines.append("")
-        message_lines.append("Continue with translation anyway?")
-
-        proceed = messagebox.askyesno("Language Mismatch", "\n".join(message_lines))
-        if not proceed:
+        decision = dialog.result or "cancel"
+        if decision == "cancel":
             return False, False, []
+
+        if decision == "keep":
+            return True, False, []
 
         retranslate_entries: List = [
             entry
             for entry, status in zip(entries, statuses)
-            if status.translation_matches is False and not status.missing_translation
+            if not status.missing_translation
+            and (status.translation_matches is False or status.source_matches is False)
         ]
 
         return True, bool(retranslate_entries), retranslate_entries
@@ -404,7 +412,8 @@ class POTranslatorApp:
                 e for e in self.entries
                 if query in e.msgid.lower() or query in e.msgstr.lower()
             ]
-        
+
+        self.current_page = 1
         self.apply_filter()
     
     def apply_filter(self):
@@ -426,9 +435,44 @@ class POTranslatorApp:
             self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr)]
         else:
             self.filtered_entries = base
-        
+
+        self.current_page = 1
         self.populate()
-    
+
+    def _compute_total_pages(self, total_entries: int) -> int:
+        """Return the number of pages for the current page size."""
+
+        if total_entries <= 0:
+            return 1
+        if self.page_size <= 0:
+            return 1
+        return max(1, math.ceil(total_entries / self.page_size))
+
+    def change_page(self, new_page: int):
+        """Change the currently displayed page."""
+
+        total_pages = self._compute_total_pages(len(self.filtered_entries))
+        new_page = max(1, min(new_page, total_pages))
+        if new_page == self.current_page:
+            return
+        self.current_page = new_page
+        self.populate()
+        self.statusbar.set_status(f"📄 Showing page {self.current_page} of {total_pages}")
+
+    def change_page_size(self, new_size: int):
+        """Update the items-per-page setting and reset pagination."""
+
+        if new_size <= 0:
+            self.page_size = 0
+            message = "📄 Showing all entries on a single page"
+        else:
+            self.page_size = new_size
+            message = f"📄 Showing {new_size} entries per page"
+
+        self.current_page = 1
+        self.populate()
+        self.statusbar.set_status(message)
+
     def select_all(self):
         """Select all entries"""
         self.table.select_all()

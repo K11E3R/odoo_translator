@@ -36,7 +36,7 @@ class StatusBar:
             container,
             text="Ready to import files",
             anchor="w",
-            font=ctk.CTkFont(size=12),
+            font=THEME.font(size=12),
             text_color=THEME.TEXT_SECONDARY
         )
         self.status.grid(row=0, column=0, sticky="w")
@@ -45,7 +45,7 @@ class StatusBar:
             container,
             text="",
             anchor="e",
-            font=ctk.CTkFont(size=11),
+            font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED
         )
         self.progress_label.grid(row=0, column=1, padx=(10, 10))
