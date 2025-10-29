@@ -585,7 +585,7 @@ class POTranslatorApp:
         source_label = code_to_name.get(new_source, new_source).upper()
         target_label = code_to_name.get(new_target, new_target).upper()
         self.statusbar.set_status(
-            f"🤖 Auto-detected {source_label} entries. Translating into {target_label} by default.")
+            f"🤖 Auto-detected {source_label} entries Translating into {target_label} by default")
         return changed
 
     def update_entry_status_message(self):
