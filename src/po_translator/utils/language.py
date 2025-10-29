@@ -75,9 +75,6 @@ def _detect_with_langid(text: str) -> Tuple[Optional[str], float]:
         normalized = "fr"
         confidence = max(confidence, 0.8)
 
-    if normalized not in RELATED_LANGUAGES:
-        return normalized, float(confidence)
-
     return normalized, float(confidence)
 
 
