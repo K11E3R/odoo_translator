@@ -242,7 +242,10 @@ class TranslationTable:
             end = total_entries
 
         if total_entries and start >= total_entries:
-            start = max(0, (self.total_pages - 1) * (self.page_size or total_entries))
+            if self.page_size > 0:
+                start = max(0, (self.total_pages - 1) * self.page_size)
+            else:
+                start = 0
             end = total_entries
 
         self.visible_entries = entries[start:end]
