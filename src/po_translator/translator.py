@@ -288,7 +288,7 @@ Glossary for consistent terminology:
     # ------------------------------------------------------
     # Auto translation for PO entry
     # ------------------------------------------------------
-    def auto_translate_entry(self, entry, module=None):
+    def auto_translate_entry(self, entry, module=None, force=False):
         """Auto-translate PO entry intelligently"""
         if not self.model or not entry.msgid:
             return False
@@ -298,11 +298,11 @@ Glossary for consistent terminology:
             return False
 
         # Skip if already translated
-        if entry.msgstr and entry.msgid != entry.msgstr:
+        if entry.msgstr and entry.msgid != entry.msgstr and not force:
             return False
 
         # Skip if text already French and target is French
-        if is_french_text(msgid) and self.target_lang == "fr":
+        if not force and is_french_text(msgid) and self.target_lang == "fr":
             self.logger.debug(f"Already French, skipping: {msgid[:40]}...")
             return False
 
@@ -312,8 +312,16 @@ Glossary for consistent terminology:
         # Auto-detection logic
         if self.auto_detect and detected_lang:
             if detected_lang == self.target_lang:
-                self.logger.info(f"Detected {detected_lang} same as target, skipping: {msgid[:40]}")
-                return False
+                if force:
+                    self.logger.warning(
+                        "Detected %s which matches target %s; proceeding due to override for: %s",
+                        detected_lang,
+                        self.target_lang,
+                        msgid[:40],
+                    )
+                else:
+                    self.logger.info(f"Detected {detected_lang} same as target, skipping: {msgid[:40]}")
+                    return False
             elif detected_lang != self.source_lang:
                 self.logger.warning(
                     f"Detected {detected_lang}, translating → {self.target_lang}: {msgid[:40]}..."
@@ -331,12 +339,12 @@ Glossary for consistent terminology:
     # ------------------------------------------------------
     # Batch processing
     # ------------------------------------------------------
-    def batch_translate(self, entries, module=None, progress_callback=None):
+    def batch_translate(self, entries, module=None, progress_callback=None, force=False):
         """Translate multiple entries with stats"""
         results = {"total": len(entries), "translated": 0, "skipped": 0, "failed": 0}
         for i, entry in enumerate(entries):
             try:
-                if self.auto_translate_entry(entry, module):
+                if self.auto_translate_entry(entry, module, force=force):
                     results["translated"] += 1
                 else:
                     results["skipped"] += 1
