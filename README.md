@@ -1,280 +1,343 @@
-# PO Translator v1.0
+# 🌐 Odoo PO Translator
 
-Professional Odoo translation tool with AI-powered translations, caching, and advanced features.
-
-## ✨ Features
-
-### Core Features
-- 🎨 **Modern Dark UI** - Clean, professional 2025 design
-- 🤖 **AI Translation** - Gemini-powered with Odoo-specific terminology
-- 💾 **Smart Caching** - Avoid duplicate API calls, save costs
-- 📊 **Batch Operations** - Translate multiple files at once
-- ✏️ **Inline Editing** - Quick edit any translation
-- 🔍 **Advanced Search** - Filter by status, module, or text
-- 📈 **Statistics** - Track translation progress and API usage
-
-### Advanced Features
-- ↶↷ **Undo/Redo** - Revert changes easily (Ctrl+Z/Ctrl+Y)
-- ☑️ **Batch Selection** - Select and translate specific entries
-- 🎯 **Module Tracking** - Know which Odoo module each entry belongs to
-- ✅ **Validation** - Automatic variable preservation check
-- 🔄 **Retry Logic** - Automatic retry on API failures
-- 📤 **Export Options** - Choose what to export, compile .mo files
-- ⌨️ **Keyboard Shortcuts** - Work faster with shortcuts
-- 🧩 **Modular Architecture** - Clean, maintainable codebase
-
-## 🚀 Quick Start
+Fast, AI-powered translation tool for Odoo `.po` files using Google Gemini 2.5 Flash-Lite.
 
 ```bash
-./run.sh
-```
+# 1. Install dependencies
+pip install -r requirements.txt
 
-That's it! The script handles everything automatically.
+# 2. Run the app
+python app.py
+```
 
 ## 📋 Requirements
 
-- **Python 3.11+** (system Python)
-- **Internet connection**
-- **Gemini API key** (free at https://makersuite.google.com/app/apikey)
+- **Python 3.11+**
+- **Gemini API Key** (free at https://aistudio.google.com/app/apikey)
+- **Dependencies**: `polib`, `langdetect`, `customtkinter`, `google-generativeai`
 
 ## 🎯 Usage
 
 ### 1. Get API Key (FREE)
-1. Visit https://makersuite.google.com/app/apikey
+1. Visit https://aistudio.google.com/app/apikey
 2. Create a free API key
-3. Paste it in the app and click "Save API Key"
+3. Paste it in the app sidebar and click "Save API Key"
 
-### 2. Import Files
-- Click "📁 Import Files" or press `Ctrl+O`
+### 2. Import PO Files
+- Click "📁 Import Files"
 - Select one or more `.po` files
 - Files are automatically merged and deduplicated
 
-### 3. Translate
-**Option A: Translate All**
-- Click "🌐 Translate All"
-- Translates all untranslated entries
+### 3. Configure Languages
+- **Source Language**: Language of `msgid` (default: English)
+- **Target Language**: Language for `msgstr` (default: French)
+- **Auto-detect**: Automatically correct language mismatches
 
-**Option B: Translate Selected**
-- Select specific entries with checkboxes
-- Click "✓ Translate Selected"
-- Only selected entries are translated
-
-### 4. Review & Edit
-- Click any entry to edit
-- Changes are tracked for undo/redo
-- Use search to find specific translations
+### 4. Translate
+- Click "🌐 Translate All" to translate all untranslated entries
+- Or select specific entries and click "✓ Translate Selected"
 
 ### 5. Export
-- Click "📤 Export"
-- Choose export options:
-  - Include translated/untranslated
-  - Compile .mo file
-- Save your file
+- Click "💾 Save File" to export translated `.po` file
+- Optionally compile to `.mo` file
 
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+O` | Import files |
-| `Ctrl+S` | Save file |
-| `Ctrl+E` | Export with options |
-| `Ctrl+F` | Focus search |
-| `Ctrl+A` | Select all |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
-| `F5` | Refresh view |
-| `Esc` | Clear search |
-| `Delete` | Delete selected |
-
-## 📊 Statistics
-
-View detailed statistics:
-- Translation progress
-- API usage and cache efficiency
-- Cache hit rate
-- Error tracking
-
-Click "📊 Statistics" to view full report.
-
-## 🏗️ Project Structure (Modular Architecture)
+## 🏗️ Project Structure
 
 ```
 translator_odoo/
-├── app.py                      # Entry point
-├── run.sh                      # Launcher script
-├── requirements.txt            # Dependencies
-├── src/
-│   └── po_translator/
-│       ├── core/               # Business logic
-│       │   ├── merger.py       # PO file merging
-│       │   ├── cleaner.py      # Entry deduplication
-│       │   └── indexer.py      # Module tracking
-│       ├── utils/              # Utilities
-│       │   ├── logger.py       # Logging system
-│       │   ├── language.py     # Language detection
-│       │   └── file_utils.py   # File operations
-│       ├── translator.py       # AI translator with caching
-│       ├── gui/                # GUI Package (Modular)
-│       │   ├── app.py          # Main application
-│       │   ├── components/     # UI Components
-│       │   │   ├── sidebar.py  # Left sidebar
-│       │   │   ├── toolbar.py  # Top toolbar
-│       │   │   ├── table.py    # Translation table
-│       │   │   └── statusbar.py # Bottom status bar
-│       │   ├── dialogs/        # Dialog Windows
-│       │   │   ├── edit_dialog.py       # Edit entry
-│       │   │   ├── export_dialog.py     # Export options
-│       │   │   └── statistics_dialog.py # Statistics
-│       │   └── widgets/        # Custom Widgets
-│       │       └── undo_manager.py # Undo/redo logic
-│       └── gui.py              # Backward compatibility
-└── .config                     # API key (auto-created)
+├── app.py                      # Main entry point
+├── clear_cache.py              # Cache management utility
+├── requirements.txt            # Python dependencies
+├── test_translation_debug.py   # Debug translation issues
+├── test_translator.py          # Unit tests
+├── test_files/                 # Sample PO files for testing
+│   ├── test_fr_en.po          # French → English test
+│   ├── test_mixed.po          # Mixed language test
+│   └── test_with_variables.po # Variable preservation test
+└── src/po_translator/
+    ├── translator.py           # Core AI translator (Gemini 2.5)
+    ├── core/                   # Business logic
+    │   ├── merger.py          # PO file merging
+    │   ├── cleaner.py         # Entry deduplication
+    │   └── indexer.py         # Module tracking
+    ├── utils/                  # Utilities
+    │   ├── logger.py          # Logging system
+    │   ├── language.py        # Language detection
+    │   └── file_utils.py      # File operations
+    └── gui/                    # GUI components
+        ├── app.py             # Main application window
+        ├── components/        # UI components
+        │   ├── sidebar.py     # Scrollable left sidebar
+        │   ├── toolbar.py     # Top toolbar
+        │   ├── table.py       # Translation table
+        │   └── statusbar.py   # Bottom status bar
+        ├── dialogs/           # Dialog windows
+        │   ├── edit_dialog.py
+        │   ├── export_dialog.py
+        │   └── statistics_dialog.py
+        └── widgets/           # Custom widgets
+            └── undo_manager.py
 ```
 
-### Why Modular?
+## 🔧 Core Components
 
-✅ **Maintainability** - Each component has a single responsibility  
-✅ **Scalability** - Easy to add new features  
-✅ **Testability** - Components can be tested independently  
-✅ **Team Collaboration** - Multiple developers can work on different components  
-✅ **Code Reusability** - Components can be reused in other projects  
+### Translator (`src/po_translator/translator.py`)
 
-## 🎨 Features Showcase
+**Key Features:**
+- Gemini 2.5 Flash-Lite integration
+- Smart language detection with keyword-based fallback
+- Odoo glossary for consistent terminology
+- Translation caching (JSON-based)
+- Variable preservation validation
+- Retry logic with rate limiting (~10 req/sec)
 
-### Smart Caching
-- Translations are cached locally
-- Avoid duplicate API calls
-- Save API quota and time
-- ~70-90% cache hit rate on repeated translations
+**Supported Languages:**
+- English (en)
+- French (fr)
+- Spanish (es)
+- German (de)
+- Italian (it)
+- Portuguese (pt)
+- Dutch (nl)
+- Arabic (ar)
 
-### Validation
-- Automatic variable preservation
-- Format string validation
-- Prevents broken translations
-- Retry on validation failure
+**Odoo Glossary (French):**
+```python
+"Invoice" → "Facture"
+"Quotation" → "Devis"
+"Sales" → "Ventes"
+"Purchase Order" → "Bon de commande"
+"Delivery Order" → "Livraison"
+"Partner" → "Partenaire"
+"Customer" → "Client"
+"Vendor" → "Fournisseur"
+# ... and more
+```
 
-### Batch Operations
-- Select multiple entries
-- Translate only what you need
-- Delete unwanted entries
-- Export filtered results
+### Language Detection (`src/po_translator/utils/language.py`)
 
-### Undo/Redo
-- Track all changes
-- Revert mistakes instantly
-- Up to 50 actions history
-- Works across all operations
+- **Keyword-based detection** for short texts (< 3 words)
+- **langdetect fallback** for longer texts
+- **Confidence mapping** to handle misdetections
+- **French/English indicators** for Odoo-specific terms
 
-## 🔧 Configuration
+### GUI (`src/po_translator/gui/`)
 
-### API Key
-Stored in `.config` file (auto-created when you save the key in the app).
+- **Modular architecture** - Each component is independent
+- **Scrollable sidebar** - All controls accessible
+- **Pagination** - Displays 50 entries at a time for performance
+- **Background loading** - Progress bar during file import
+- **Undo/Redo** - Track changes with history
 
-### Cache
-Translation cache is stored in `~/.po_translator/translation_cache.json`
+## 🎨 GUI Features
 
-To clear cache:
-1. Click "📊 Statistics"
-2. Click "Clear Cache"
+### Sidebar (Scrollable)
+- API key management
+- Language selection (source/target)
+- Auto-detect toggle
+- Translation controls
+- Statistics display
 
-Or manually delete: `~/.po_translator/translation_cache.json`
+### Translation Table
+- Display 50 entries at a time (pagination)
+- Inline editing
+- Status indicators (translated/untranslated)
+- Module tracking
+- Search and filter
+
+### Dialogs
+- **Edit Dialog**: Modify msgid/msgstr
+- **Export Dialog**: Choose export options
+- **Statistics Dialog**: View detailed stats
+
+## 📊 Statistics
+
+View real-time statistics:
+- Total requests
+- Cache hits (hit rate %)
+- API calls (efficiency %)
+- Errors and retries
+- Auto-corrections
+- Cache entries
+
+Click "📊 Statistics" in the sidebar to view.
 
 ## 🐛 Troubleshooting
 
-### "Can't find init.tcl"
-The app uses system Python for WSL compatibility. Run:
+### Translation Not Working
+
+1. **Check API Key**: Make sure it's saved in the sidebar
+2. **Check Model**: Should be `gemini-2.5-flash-lite`
+3. **Clear Cache**: Run `python clear_cache.py`
+4. **Check Logs**: View `app.log` or `po_translator.log`
+5. **Test Debug**: Run `python test_translation_debug.py`
+
+### Common Issues
+
+**"Module not found"**
+```bash
+pip install -r requirements.txt
+```
+
+**"Can't find init.tcl" (WSL)**
 ```bash
 sudo apt install python3-tk
 ```
 
-### "Module not found"
-Install dependencies:
-```bash
-pip install --break-system-packages polib langdetect customtkinter google-generativeai
-```
-
-### Translation not working
-1. Check API key is saved
-2. Check internet connection
-3. View Statistics for error details
-4. Check Gemini API quota
-
-### Slow performance
-- Limit visible entries (use filters)
-- Clear translation cache
+**Slow Performance**
+- Reduce display limit in table (default: 50)
+- Clear cache if too large
 - Check API rate limits
 
-## 📝 Translation Quality
+**Language Detection Issues**
+- Enable "Auto-detect & correct language"
+- Check `src/po_translator/utils/language.py` for indicators
+- Add custom keywords if needed
 
-The translator uses Odoo-specific terminology:
-- "Bon de commande" → "Purchase Order"
-- "Facture" → "Invoice"
-- "Livraison" → "Delivery Order"
-- "Devis" → "Quotation"
-- And many more...
+## 🧪 Testing
 
-Variables and formatting are automatically preserved:
-- `%(name)s`, `%s`, `{field}`, `${var}`
-- HTML tags: `<b>`, `<i>`, `<span>`
-- Line breaks: `\n`
+### Debug Translation
+```bash
+python test_translation_debug.py
+```
+Tests:
+- Basic translation (Facture → Invoice)
+- Variable preservation
+- Cognate handling (Client, Article)
+
+### Unit Tests
+```bash
+python test_translator.py
+```
+
+### Test Files
+Located in `test_files/`:
+- `test_fr_en.po` - French to English
+- `test_mixed.po` - Mixed languages
+- `test_with_variables.po` - Variable preservation
+
+## ⚙️ Configuration
+
+### API Key Storage
+Stored in `.config` file (auto-created)
+
+### Cache Location
+`~/.po_translator/translation_cache.json`
+
+### Clear Cache
+```bash
+python clear_cache.py
+```
+Or via GUI: Statistics → Clear Cache
+
+### Logging
+- `app.log` - Application logs
+- `po_translator.log` - Translation logs
+- Level: `DEBUG` (configurable in `utils/logger.py`)
+
+## 🔍 How It Works
+
+### Translation Flow
+
+1. **Import** → Load and merge `.po` files
+2. **Detect** → Check language of `msgid`
+3. **Translate** → Call Gemini API with Odoo-aware prompt
+4. **Validate** → Check variables are preserved
+5. **Cache** → Store translation for reuse
+6. **Export** → Save translated `.po` file
+
+### Smart Language Detection
+
+```python
+# Example: msgid is French but should be English
+msgid = "Facture"  # Detected as French
+target = "fr"      # Target is French
+
+# Skip! Already in target language
+# OR translate to English first if source is English
+```
+
+### Prompt Engineering
+
+```
+You are an expert translator for Odoo ERP software.
+
+Task: Translate from French to English
+Context: Odoo ERP
+
+Rules:
+1. Keep placeholders exactly (%(name)s, %s, {x}, etc.)
+2. Preserve HTML and newlines (\n)
+3. Use professional, natural English
+4. Only return the translation — no quotes, no explanation
+5. Do NOT return the same text unless it's a real cognate
+
+Glossary: { ... Odoo terms ... }
+
+Text: Facture
+Translation:
+```
+
+## 🚀 Performance
+
+- **Rate Limit**: ~10 requests/sec
+- **Cache Hit Rate**: 70-90% on repeated translations
+- **Display Limit**: 50 entries (configurable)
+- **Background Loading**: Non-blocking file import
+- **Batch Processing**: Translate multiple entries efficiently
 
 ## 👨‍💻 For Developers
 
-### Adding New Components
+### Adding New Languages
 
-1. **Create component file** in appropriate directory:
-   - `src/po_translator/gui/components/` for UI components
-   - `src/po_translator/gui/dialogs/` for dialog windows
-   - `src/po_translator/gui/widgets/` for custom widgets
-
-2. **Import in `__init__.py`**:
-```python
-from .my_component import MyComponent
-__all__ = ['MyComponent', ...]
-```
-
-3. **Use in app.py**:
-```python
-from .components import MyComponent
-self.my_component = MyComponent(parent, callbacks)
-```
-
-### Component Structure
-
-Each component should:
-- Accept `parent` and `callbacks` in `__init__`
-- Have a `setup_ui()` method
-- Expose public methods for external control
-- Handle its own state internally
-
-### Example Component
+Edit `src/po_translator/translator.py`:
 
 ```python
-class MyComponent:
-    def __init__(self, parent, callbacks):
-        self.parent = parent
-        self.callbacks = callbacks
-        self.frame = ctk.CTkFrame(parent)
-        self.setup_ui()
-    
-    def setup_ui(self):
-        # Create UI elements
-        pass
-    
-    def update_data(self, data):
-        # Public method to update component
-        pass
+LANGUAGES = {
+    "xx": {"name": "New Language"},
+}
+
+ODOO_TERMS = {
+    "xx": {
+        "Invoice": "Translation",
+        # ... add terms
+    }
+}
 ```
+
+### Customizing Prompt
+
+Edit `_get_prompt()` in `src/po_translator/translator.py`
+
+### Adding GUI Components
+
+1. Create file in `src/po_translator/gui/components/`
+2. Import in `__init__.py`
+3. Use in `app.py`
+
+### Modifying Language Detection
+
+Edit `src/po_translator/utils/language.py`:
+- Add keywords to `FRENCH_INDICATORS` / `ENGLISH_INDICATORS`
+- Adjust confidence thresholds
+- Add language mappings
+
+## 📝 Best Practices
+
+1. **Always test** with `test_translation_debug.py` after changes
+2. **Clear cache** when changing models or prompts
+3. **Use auto-detect** for mixed-language files
+4. **Review translations** before exporting
+5. **Monitor statistics** to track API usage
+6. **Keep logs** for debugging (DEBUG level)
 
 ## 🤝 Contributing
 
-Contributions welcome! The modular architecture makes it easy to add features:
-
 1. Fork the repository
 2. Create a feature branch
-3. Add your component/feature
+3. Make changes
 4. Test thoroughly
-5. Submit a pull request
+5. Submit pull request
 
 ## 📄 License
 
@@ -282,37 +345,32 @@ MIT License - Free to use and modify
 
 ## 👤 Author
 
-**BOUBOU**
-
 Made with ❤️ for the Odoo community
 
 ---
 
 ## 🎯 Pro Tips
 
-1. **Use filters** - Work on untranslated entries first
-2. **Select specific entries** - Don't translate everything at once
-3. **Check statistics** - Monitor your API usage
-4. **Use keyboard shortcuts** - Work faster
-5. **Review before exporting** - Use inline editing to fix issues
-6. **Cache is your friend** - Re-importing files reuses cached translations
-7. **Modular code** - Easy to extend and customize
+- Use **auto-detect** to handle mixed-language files automatically
+- **Clear cache** when switching between models or languages
+- **Test with debug script** before translating large files
+- **Monitor statistics** to optimize API usage
+- **Use pagination** for large files (50 entries at a time)
+- **Check logs** for detailed error messages
 
-## 🔮 Future Ideas
+## 🔮 Roadmap
 
+- [ ] Support more AI providers (OpenAI, Claude, local LLMs)
 - [ ] Translation memory across projects
-- [ ] Glossary management
-- [ ] Multiple AI providers (OpenAI, Claude)
-- [ ] Collaborative translation
-- [ ] Version control integration
-- [ ] Custom terminology database
+- [ ] Custom glossary management
 - [ ] Batch file processing
-- [ ] Translation quality scoring
-- [ ] Plugin system for custom components
 - [ ] REST API for automation
+- [ ] Plugin system
+- [ ] Quality scoring
+- [ ] Collaborative translation
 
 ---
 
-**Need help?** Check the logs in `app.log` for detailed debugging information.
+**Need help?** Check `app.log` for detailed debugging information.
 
-**Enjoy translating!** 🚀
+**Enjoy translating!** 🚀✨
