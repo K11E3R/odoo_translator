@@ -546,7 +546,7 @@ class POTranslatorApp:
             return changed
 
         dominant_lang, count = language_votes.most_common(1)[0]
-        if dominant_lang != self.translator.target_lang:
+        if dominant_lang == self.translator.target_lang:
             return changed
 
         current_source = self.translator.source_lang
