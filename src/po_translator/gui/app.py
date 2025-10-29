@@ -4,6 +4,7 @@ Orchestrates all GUI components and business logic
 """
 import os
 import threading
+from collections import Counter
 from tkinter import filedialog, messagebox
 
 try:
@@ -14,7 +15,7 @@ except ImportError:
 
 from po_translator.core.merger import POMerger
 from po_translator.translator import Translator
-from po_translator.utils.language import is_untranslated
+from po_translator.utils.language import detect_language, is_untranslated
 from po_translator.utils.logger import get_logger
 
 from .components import Sidebar, Toolbar, TranslationTable, StatusBar
@@ -35,7 +36,11 @@ class POTranslatorApp:
         self.merger = POMerger()
         self.translator = Translator()
         self.undo_manager = UndoManager()
-        
+
+        # Language configuration state
+        self._updating_language_controls = False
+        self._manual_language_override = False
+
         # State
         self.entries = []
         self.filtered_entries = []
@@ -195,15 +200,19 @@ class POTranslatorApp:
         self.populate()
 
         self.sidebar.btn_import.configure(state="normal")
+        auto_configured = False
         if self.entries:
             self.sidebar.enable_file_buttons()
+            if not self._manual_language_override:
+                auto_configured = self.auto_configure_languages()
         else:
             self.sidebar.disable_file_buttons()
 
         if self.sidebar.api_key_entry.get().strip():
             self.sidebar.enable_translation_buttons()
-        
-        self.statusbar.set_status(f"✅ Imported {len(entries)} entries successfully")
+
+        if not auto_configured:
+            self.statusbar.set_status(f"✅ Imported {len(entries)} entries successfully")
     
     def populate(self):
         """Populate table"""
@@ -500,6 +509,9 @@ class POTranslatorApp:
 
     def on_language_changed(self, *_args):
         """Handle language configuration changes from the sidebar"""
+        if self._updating_language_controls:
+            return
+        self._manual_language_override = True
         self.apply_language_settings()
 
     def apply_language_settings(self, show_status=True):
@@ -516,6 +528,65 @@ class POTranslatorApp:
             target = settings['target'].upper()
             detect = "on" if settings['auto_detect'] else "off"
             self.statusbar.set_status(f"🌐 Language settings updated: {source} → {target} (auto-detect {detect})")
+
+    def auto_configure_languages(self):
+        """Auto-detect entry language and adjust translator defaults"""
+        changed = False
+        samples = [entry.msgid for entry in self.entries if entry.msgid]
+        if not samples:
+            return changed
+
+        language_votes = Counter()
+        for text in samples[:50]:
+            detected = detect_language(text)
+            if detected in self.translator.LANGUAGES:
+                language_votes[detected] += 1
+
+        if not language_votes:
+            return changed
+
+        dominant_lang, count = language_votes.most_common(1)[0]
+        if dominant_lang == self.translator.target_lang:
+            return changed
+
+        current_source = self.translator.source_lang
+        if dominant_lang == current_source:
+            fallback_targets = [code for code in self.translator.LANGUAGES if code not in {dominant_lang}]
+            sorted_targets = sorted(fallback_targets)
+            new_target = sorted_targets[0] if sorted_targets else current_source
+        else:
+            new_target = current_source
+
+        new_source = dominant_lang
+
+        if new_source == new_target:
+            return changed
+
+        self.logger.info(
+            "Auto-configuring languages based on imported entries: %s → %s (detected %s entries)",
+            new_source,
+            new_target,
+            count,
+        )
+
+        code_to_name = {code: data["name"] for code, data in self.translator.LANGUAGES.items()}
+
+        self._updating_language_controls = True
+        try:
+            if new_source in code_to_name:
+                self.sidebar.source_lang_var.set(code_to_name[new_source])
+            if new_target in code_to_name:
+                self.sidebar.target_lang_var.set(code_to_name[new_target])
+        finally:
+            self._updating_language_controls = False
+
+        self.apply_language_settings(show_status=False)
+        changed = True
+        source_label = code_to_name.get(new_source, new_source).upper()
+        target_label = code_to_name.get(new_target, new_target).upper()
+        self.statusbar.set_status(
+            f"🤖 Auto-detected {source_label} entries Translating into {target_label} by default")
+        return changed
 
     def update_entry_status_message(self):
         """Display contextual status message for the current table view"""
