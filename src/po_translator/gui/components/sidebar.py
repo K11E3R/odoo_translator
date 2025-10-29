@@ -364,7 +364,7 @@ class Sidebar:
     def _update_translation_buttons(self):
         """Update translation button states based on current flags"""
         translate_state = "normal" if self.translation_enabled else "disabled"
-        selected_state = "normal" if self.translation_enabled and self.has_selection else "disabled"
+        selected_state = "normal" if self.has_selection else "disabled"
         self.btn_translate.configure(state=translate_state)
         self.btn_translate_selected.configure(state=selected_state)
     
