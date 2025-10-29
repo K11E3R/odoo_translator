@@ -4,6 +4,9 @@ Orchestrates all GUI components and business logic
 """
 import os
 import threading
+from collections import Counter
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Optional, Tuple
 from tkinter import filedialog, messagebox
 
 try:
@@ -14,20 +17,34 @@ except ImportError:
 
 from po_translator.core.merger import POMerger
 from po_translator.translator import Translator
-from po_translator.utils.language import is_untranslated
+from po_translator.utils.language import detect_language, detect_language_details, is_untranslated
 from po_translator.utils.logger import get_logger
 
 from .components import Sidebar, Toolbar, TranslationTable, StatusBar
-from .dialogs import EditDialog, ExportDialog, StatisticsDialog
+from .dialogs import EditDialog, ExportDialog, StatisticsDialog, LanguageMismatchDialog
 from .widgets import UndoManager
+from .theme import THEME, apply_root_theme
 
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
+
+
+@dataclass(frozen=True)
+class EntryLanguageStatus:
+    """Language analysis for a PO entry."""
+
+    source_lang: Optional[str]
+    source_confidence: float
+    translation_lang: Optional[str]
+    translation_confidence: float
+    source_matches: Optional[bool]
+    translation_matches: Optional[bool]
+    missing_translation: bool
 
 
 class POTranslatorApp:
     """Main PO Translator Application"""
-    
+
     def __init__(self):
         self.logger = get_logger('po_translator.gui')
         
@@ -35,26 +52,35 @@ class POTranslatorApp:
         self.merger = POMerger()
         self.translator = Translator()
         self.undo_manager = UndoManager()
-        
+
+        # Language configuration state
+        self._updating_language_controls = False
+        self._manual_language_override = False
+
         # State
         self.entries = []
         self.filtered_entries = []
         self.unsaved = False
         self.translating = False
+        self._language_analysis_cache: Dict[int, tuple] = {}
         
         # Window
         self.root = ctk.CTk()
         self.root.title("PO Translator • Advanced Odoo Translation Tool")
         self.root.geometry("1500x900")
-        
+
         # Ensure window decorations are visible (for WSL/Linux)
         self.root.resizable(True, True)
         self.root.minsize(1200, 700)
+
+        apply_root_theme(self.root)
         
         self.setup_ui()
         self.load_config()
         self.setup_shortcuts()
-        
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.apply_language_settings(show_status=False)
+
         self.logger.info("Application initialized")
     
     def setup_ui(self):
@@ -77,15 +103,18 @@ class POTranslatorApp:
             'apply_filter': self.apply_filter,
             'select_all': self.select_all,
             'clear_selection': self.clear_selection,
+            'delete_selected': self.delete_selected,
             'edit': self.edit_entry,
-            'selection_changed': self.on_selection_changed
+            'selection_changed': self.on_selection_changed,
+            'language_changed': self.on_language_changed
         }
         
         # Create components
         self.sidebar = Sidebar(self.root, callbacks)
-        
+        self.sidebar.disable_file_buttons()
+
         # Content area
-        content = ctk.CTkFrame(self.root, corner_radius=0, fg_color="#0f0f0f")
+        content = ctk.CTkFrame(self.root, corner_radius=0, fg_color=THEME.SURFACE)
         content.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
         content.grid_rowconfigure(2, weight=1)
         content.grid_columnconfigure(0, weight=1)
@@ -137,15 +166,19 @@ class POTranslatorApp:
             pass
         
         self.translator.set_api_key(key)
-        
+        self.apply_language_settings(show_status=False)
+
         if self.entries:
             self.sidebar.enable_translation_buttons()
-        
+
         self.statusbar.set_status("✅ API key saved successfully")
         messagebox.showinfo("Success", "API key saved! Translation features are now enabled.")
     
     def import_files(self):
         """Import PO files with progress tracking"""
+        if not self.confirm_discard_changes("to import new files"):
+            return
+
         files = filedialog.askopenfilenames(
             title="Select PO Files",
             filetypes=[("PO Files", "*.po"), ("All Files", "*.*")]
@@ -178,29 +211,164 @@ class POTranslatorApp:
     
     def on_import(self, entries):
         """Handle import completion"""
+        self.invalidate_language_analysis()
         self.entries = entries
         self.filtered_entries = entries
         self.table.clear_selection()
         self.undo_manager.clear()
+        self.unsaved = False
         self.populate()
-        
+
         self.sidebar.btn_import.configure(state="normal")
-        self.sidebar.enable_file_buttons()
-        
+        auto_configured = False
+        if self.entries:
+            self.sidebar.enable_file_buttons()
+            if not self._manual_language_override:
+                auto_configured = self.auto_configure_languages()
+        else:
+            self.sidebar.disable_file_buttons()
+
         if self.sidebar.api_key_entry.get().strip():
             self.sidebar.enable_translation_buttons()
-        
-        self.statusbar.set_status(f"✅ Imported {len(entries)} entries successfully")
+
+        if not auto_configured:
+            self.statusbar.set_status(f"✅ Imported {len(entries)} entries successfully")
     
     def populate(self):
         """Populate table"""
-        if not self.filtered_entries:
-            self.table.show_empty_state()
-            return
-        
-        self.table.populate(self.filtered_entries, self.merger)
+        status_map = self.build_language_status_map(self.filtered_entries)
+        self.table.populate(self.filtered_entries, self.merger, status_map=status_map)
         self.update_stats()
-    
+        self.update_entry_status_message()
+
+    def invalidate_language_analysis(self, entries: Optional[Iterable] = None):
+        """Invalidate cached language analysis for entries."""
+
+        if entries is None:
+            self._language_analysis_cache.clear()
+            return
+
+        entry_ids = {id(entry) for entry in entries}
+        for entry_id in list(self._language_analysis_cache.keys()):
+            if entry_id in entry_ids:
+                self._language_analysis_cache.pop(entry_id, None)
+
+    def build_language_status_map(self, entries: Iterable) -> Dict[int, EntryLanguageStatus]:
+        """Analyse languages for a batch of entries."""
+
+        status_map: Dict[int, EntryLanguageStatus] = {}
+        for entry in entries:
+            try:
+                status_map[id(entry)] = self.get_entry_language_status(entry)
+            except Exception as exc:
+                self.logger.debug("Language analysis failed for entry: %s", exc)
+        return status_map
+
+    def get_entry_language_status(self, entry) -> EntryLanguageStatus:
+        """Return language analysis for a single entry with caching."""
+
+        entry_id = id(entry)
+        expected_source = self.translator.source_lang
+        expected_target = self.translator.target_lang
+
+        msgid = (entry.msgid or "").strip()
+        msgstr = (entry.msgstr or "").strip()
+
+        cached = self._language_analysis_cache.get(entry_id)
+        if cached:
+            cached_msgid, cached_msgstr, cached_source, cached_target, status = cached
+            if (
+                cached_msgid == msgid
+                and cached_msgstr == msgstr
+                and cached_source == expected_source
+                and cached_target == expected_target
+            ):
+                return status
+
+        src_lang, src_conf = detect_language_details(msgid)
+        missing_translation = is_untranslated(entry.msgid, entry.msgstr)
+
+        trans_lang, trans_conf = (None, 0.0)
+        if not missing_translation and msgstr:
+            trans_lang, trans_conf = detect_language_details(msgstr)
+
+        source_matches = (src_lang == expected_source) if src_lang else None
+        translation_matches: Optional[bool]
+        if missing_translation:
+            translation_matches = None
+        elif trans_lang:
+            translation_matches = trans_lang == expected_target
+        else:
+            translation_matches = False
+
+        status = EntryLanguageStatus(
+            source_lang=src_lang,
+            source_confidence=src_conf,
+            translation_lang=trans_lang,
+            translation_confidence=trans_conf,
+            source_matches=source_matches,
+            translation_matches=translation_matches,
+            missing_translation=missing_translation,
+        )
+
+        self._language_analysis_cache[entry_id] = (
+            msgid,
+            msgstr,
+            expected_source,
+            expected_target,
+            status,
+        )
+        return status
+
+    def validate_entries_for_translation(self, entries: Iterable) -> Tuple[bool, bool, List]:
+        """Validate source/translation languages before sending to the API.
+
+        Returns a tuple of (should_continue, force_translation, retranslate_entries).
+        """
+
+        entries = list(entries)
+        if not entries:
+            return True, False, []
+
+        statuses = [self.get_entry_language_status(entry) for entry in entries]
+        expected_source = self.translator.source_lang
+        expected_target = self.translator.target_lang
+
+        mismatched_sources = [s for s in statuses if s.source_matches is False]
+        mismatched_targets = [s for s in statuses if s.translation_matches is False and not s.missing_translation]
+
+        if not mismatched_sources and not mismatched_targets:
+            return True, False, []
+
+        lang_names = {
+            code: data.get("name", code.upper())
+            for code, data in self.translator.LANGUAGES.items()
+        }
+
+        dialog = LanguageMismatchDialog(
+            self.root,
+            statuses,
+            expected_source,
+            expected_target,
+            lang_names,
+        )
+        self.root.wait_window(dialog)
+
+        decision = dialog.result or "cancel"
+        if decision == "cancel":
+            return False, False, []
+
+        if decision == "keep":
+            return True, False, []
+
+        retranslate_entries: List = [
+            entry
+            for entry, status in zip(entries, statuses)
+            if not status.missing_translation
+            and (status.translation_matches is False or status.source_matches is False)
+        ]
+
+        return True, bool(retranslate_entries), retranslate_entries
     def update_stats(self):
         """Update statistics display"""
         total = len(self.filtered_entries)
@@ -277,6 +445,7 @@ class POTranslatorApp:
             entry.msgid = new_msgid
             entry.msgstr = new_msgstr
             self.unsaved = True
+            self.invalidate_language_analysis(entries=[entry])
             self.populate()
             self.statusbar.set_status("✏️ Entry updated")
         
@@ -284,56 +453,121 @@ class POTranslatorApp:
     
     def translate_all(self):
         """Translate all untranslated entries"""
+        if self.translating:
+            messagebox.showinfo("Translation in Progress", "Please wait for the current translation to finish.")
+            return
+
         if not self.translator.model:
             messagebox.showerror("Error", "Please save your API key first")
             return
-        
-        untranslated = [e for e in self.entries if is_untranslated(e.msgid, e.msgstr)]
-        
-        if not untranslated:
-            messagebox.showinfo("Info", "All entries are already translated!")
+
+        self.apply_language_settings(show_status=False)
+
+        if not self.entries:
+            messagebox.showinfo("Info", "No entries loaded to translate.")
             return
-        
-        est_time = len(untranslated) * 4 // 60
-        if not messagebox.askyesno(
-            "Confirm Translation",
-            f"Translate {len(untranslated)} entries?\n\n"
-            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}\n"
-            f"This will use your Gemini API quota."
-        ):
+
+        self.invalidate_language_analysis(entries=self.entries)
+        proceed, force_due_to_mismatch, flagged_entries = self.validate_entries_for_translation(self.entries)
+        if not proceed:
             return
-        
-        self.start_translation(untranslated)
-    
+
+        entries_to_translate: List = []
+        seen_ids = set()
+
+        for entry in self.entries:
+            if is_untranslated(entry.msgid, entry.msgstr):
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        flagged_ids = {id(entry) for entry in flagged_entries}
+        for entry in flagged_entries:
+            if id(entry) not in seen_ids:
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        if not entries_to_translate:
+            messagebox.showinfo("Info", "All entries already match the configured languages.")
+            return
+
+        est_time = len(entries_to_translate) * 4 // 60
+        prompt_lines = [
+            f"Translate {len(entries_to_translate)} entries?",
+        ]
+        if flagged_ids:
+            prompt_lines.append(f"Re-checking {len(flagged_ids)} existing translation(s).")
+        prompt_lines.extend([
+            "",
+            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}",
+            "This will use your Gemini API quota.",
+        ])
+        if not messagebox.askyesno("Confirm Translation", "\n".join(prompt_lines)):
+            return
+
+        force = force_due_to_mismatch or bool(flagged_ids)
+        self.start_translation(entries_to_translate, force=force)
+
     def translate_selected(self):
         """Translate selected entries"""
+        if self.translating:
+            messagebox.showinfo("Translation in Progress", "Please wait for the current translation to finish.")
+            return
+
         if not self.translator.model:
             messagebox.showerror("Error", "Please save your API key first")
             return
-        
         if self.table.get_selected_count() == 0:
             messagebox.showwarning("Warning", "Please select entries to translate")
             return
-        
+
         selected = self.table.get_selected_entries(self.entries)
-        untranslated = [e for e in selected if is_untranslated(e.msgid, e.msgstr)]
-        
-        if not untranslated:
-            messagebox.showinfo("Info", "Selected entries are already translated!")
+        if not selected:
+            messagebox.showinfo("Info", "No selectable entries found for translation.")
             return
-        
-        est_time = len(untranslated) * 4 // 60
-        if not messagebox.askyesno(
-            "Confirm Translation",
-            f"Translate {len(untranslated)} selected entries?\n\n"
-            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}"
-        ):
+
+        self.apply_language_settings(show_status=False)
+        self.invalidate_language_analysis(entries=selected)
+
+        proceed, force_due_to_mismatch, flagged_entries = self.validate_entries_for_translation(selected)
+        if not proceed:
             return
-        
-        self.start_translation(untranslated)
-    
-    def start_translation(self, entries_to_translate):
+
+        entries_to_translate: List = []
+        seen_ids = set()
+        for entry in selected:
+            if is_untranslated(entry.msgid, entry.msgstr):
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        flagged_ids = {id(entry) for entry in flagged_entries}
+        for entry in flagged_entries:
+            if id(entry) not in seen_ids:
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        if not entries_to_translate:
+            messagebox.showinfo("Info", "Selected entries already match the configured languages.")
+            return
+
+        est_time = len(entries_to_translate) * 4 // 60
+        prompt_lines = [
+            f"Translate {len(entries_to_translate)} selected entries?",
+        ]
+        if flagged_ids:
+            prompt_lines.append(f"Re-checking {len(flagged_ids)} existing translation(s).")
+        prompt_lines.extend([
+            "",
+            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}",
+        ])
+        if not messagebox.askyesno("Confirm Translation", "\n".join(prompt_lines)):
+            return
+
+        force = force_due_to_mismatch or bool(flagged_ids)
+        self.start_translation(entries_to_translate, force=force)
+
+    def start_translation(self, entries_to_translate, force=False):
         """Start translation process with parallel processing"""
+        self.apply_language_settings(show_status=False)
         self.translating = True
         self.statusbar.set_status("🌐 Translating entries...", True)
         self.sidebar.disable_translation_buttons()
@@ -351,7 +585,7 @@ class POTranslatorApp:
                 if not self.translating:
                     return False
                 module = self.merger.indexer.get_module(entry.msgid)
-                return self.translator.auto_translate_entry(entry, module)
+                return self.translator.auto_translate_entry(entry, module, force=force)
             
             # Use ThreadPoolExecutor for parallel translation (4 threads = 4x faster)
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
@@ -373,6 +607,7 @@ class POTranslatorApp:
                     self.root.after(0, lambda c=completed, t=total, pct=percent: 
                                    self.statusbar.set_status(f"🌐 Translating: {c}/{t} ({pct}%)", True, f"{pct}%"))
             
+            self.root.after(0, lambda items=entries_to_translate: self.invalidate_language_analysis(items))
             self.root.after(0, self.on_translate)
         
         threading.Thread(target=worker, daemon=True).start()
@@ -384,7 +619,7 @@ class POTranslatorApp:
         self.sidebar.enable_translation_buttons()
         self.statusbar.set_status("✅ Translation completed successfully!")
         self.unsaved = True
-        
+
         # Show statistics
         stats = self.translator.get_stats()
         messagebox.showinfo(
@@ -404,6 +639,7 @@ class POTranslatorApp:
                 data = action['data']
                 data['entry'].msgid = data['old_msgid']
                 data['entry'].msgstr = data['old_msgstr']
+                self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↶ Undone")
     
@@ -415,6 +651,7 @@ class POTranslatorApp:
                 data = action['data']
                 data['entry'].msgid = data['new_msgid']
                 data['entry'].msgstr = data['new_msgstr']
+                self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↷ Redone")
     
@@ -424,10 +661,15 @@ class POTranslatorApp:
             return
         
         if messagebox.askyesno("Confirm Delete", f"Delete {self.table.get_selected_count()} selected entries?"):
-            selected_ids = self.table.selected_entries
+            selected_ids = set(self.table.selected_entries)
+            for entry_id in selected_ids:
+                self._language_analysis_cache.pop(entry_id, None)
             self.entries = [e for e in self.entries if id(e) not in selected_ids]
             self.table.clear_selection()
             self.apply_filter()
+            self.unsaved = True
+            if not self.entries:
+                self.sidebar.disable_file_buttons()
             self.statusbar.set_status(f"🗑️ Deleted entries")
     
     def show_statistics(self):
@@ -476,4 +718,146 @@ class POTranslatorApp:
     def run(self):
         """Run application"""
         self.root.mainloop()
+
+    def on_language_changed(self, *_args):
+        """Handle language configuration changes from the sidebar"""
+        if self._updating_language_controls:
+            return
+        self._manual_language_override = True
+        self.apply_language_settings()
+
+    def apply_language_settings(self, show_status=True):
+        """Synchronize sidebar language settings with the translator"""
+        settings = self.sidebar.get_language_settings()
+        changed = self.translator.configure_languages(
+            source=settings['source'],
+            target=settings['target'],
+            auto_detect=settings['auto_detect']
+        )
+
+        if changed:
+            self.invalidate_language_analysis()
+
+        if changed and show_status and not self.translating:
+            source = settings['source'].upper()
+            target = settings['target'].upper()
+            detect = "on" if settings['auto_detect'] else "off"
+            self.statusbar.set_status(f"🌐 Language settings updated: {source} → {target} (auto-detect {detect})")
+
+    def auto_configure_languages(self):
+        """Auto-detect entry language and adjust translator defaults"""
+        changed = False
+        samples = [entry.msgid for entry in self.entries if entry.msgid]
+        if not samples:
+            return changed
+
+        language_votes = Counter()
+        for text in samples[:50]:
+            detected = detect_language(text)
+            if detected in self.translator.LANGUAGES:
+                language_votes[detected] += 1
+
+        if not language_votes:
+            return changed
+
+        dominant_lang, count = language_votes.most_common(1)[0]
+        if dominant_lang != self.translator.target_lang:
+            return changed
+
+        current_source = self.translator.source_lang
+        if dominant_lang == current_source:
+            fallback_targets = [code for code in self.translator.LANGUAGES if code not in {dominant_lang}]
+            new_target = fallback_targets[0] if fallback_targets else current_source
+        else:
+            new_target = current_source
+
+        new_source = dominant_lang
+
+        if new_source == new_target:
+            return changed
+
+        self.logger.info(
+            "Auto-configuring languages based on imported entries: %s → %s (detected %s entries)",
+            new_source,
+            new_target,
+            count,
+        )
+
+        code_to_name = {code: data["name"] for code, data in self.translator.LANGUAGES.items()}
+
+        self._updating_language_controls = True
+        try:
+            if new_source in code_to_name:
+                self.sidebar.source_lang_var.set(code_to_name[new_source])
+            if new_target in code_to_name:
+                self.sidebar.target_lang_var.set(code_to_name[new_target])
+        finally:
+            self._updating_language_controls = False
+
+        self.apply_language_settings(show_status=False)
+        changed = True
+        source_label = code_to_name.get(new_source, new_source).upper()
+        target_label = code_to_name.get(new_target, new_target).upper()
+        self.statusbar.set_status(
+            f"🤖 Auto-detected {source_label} entries. Translating into {target_label} by default.")
+        return changed
+
+    def update_entry_status_message(self):
+        """Display contextual status message for the current table view"""
+        if self.translating:
+            return
+
+        total_filtered = len(self.filtered_entries)
+        total_entries = len(self.entries)
+        filter_type = self.toolbar.get_filter_value()
+        search_text = self.toolbar.get_search_text().strip()
+
+        filter_labels = {
+            'all': 'all entries',
+            'translated': 'translated entries',
+            'untranslated': 'pending entries'
+        }
+
+        if total_entries == 0:
+            self.statusbar.set_status("Import .po files to begin translating.")
+            return
+
+        if total_filtered == 0:
+            if search_text:
+                self.statusbar.set_status(f"No entries match \"{search_text}\" with current filters.")
+            elif filter_type != 'all':
+                self.statusbar.set_status("No entries match the selected filter.")
+            else:
+                self.statusbar.set_status("No entries available.")
+            return
+
+        message = f"Showing {total_filtered} {filter_labels.get(filter_type, 'entries')}"
+        if total_filtered != total_entries:
+            message += f" (of {total_entries})"
+        if search_text:
+            message += f" matching \"{search_text}\""
+
+        self.statusbar.set_status(message + ".")
+
+    def confirm_discard_changes(self, action_description):
+        """Prompt the user when unsaved changes would be lost"""
+        if not self.unsaved:
+            return True
+
+        proceed = messagebox.askyesno(
+            "Unsaved Changes",
+            f"You have unsaved changes. Continue {action_description} without saving?"
+        )
+
+        if not proceed:
+            self.statusbar.set_status("💾 Save your changes before continuing.")
+        return proceed
+
+    def on_close(self):
+        """Handle window close event with unsaved change protection"""
+        if not self.confirm_discard_changes("and exit"):
+            return
+
+        self.logger.info("Application closed")
+        self.root.destroy()
 
