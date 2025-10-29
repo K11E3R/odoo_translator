@@ -198,6 +198,39 @@ Glossary for consistent terminology:
             return False
         return True
 
+    def configure_languages(self, source=None, target=None, auto_detect=None):
+        """Configure source/target languages and auto-detection"""
+        changed = False
+
+        if source:
+            if source not in self.LANGUAGES:
+                self.logger.warning(f"Unsupported source language: {source}")
+            elif source != self.source_lang:
+                self.source_lang = source
+                changed = True
+
+        if target:
+            if target not in self.LANGUAGES:
+                self.logger.warning(f"Unsupported target language: {target}")
+            elif target != self.target_lang:
+                self.target_lang = target
+                changed = True
+
+        if auto_detect is not None and auto_detect != self.auto_detect:
+            self.auto_detect = auto_detect
+            changed = True
+
+        if changed:
+            self.logger.info(
+                f"Language configuration updated: {self.source_lang} → {self.target_lang} (auto-detect={'on' if self.auto_detect else 'off'})"
+            )
+
+        return changed
+
+    def set_languages(self, source, target, auto_detect=True):
+        """Compatibility helper for legacy callers"""
+        self.configure_languages(source=source, target=target, auto_detect=auto_detect)
+
     # ------------------------------------------------------
     # Main translation
     # ------------------------------------------------------
