@@ -317,15 +317,15 @@ class POTranslatorApp:
         )
         return status
 
-    def validate_entries_for_translation(self, entries: Iterable) -> Tuple[bool, bool]:
+    def validate_entries_for_translation(self, entries: Iterable) -> Tuple[bool, bool, List]:
         """Validate source/translation languages before sending to the API.
 
-        Returns a tuple of (should_continue, force_translation).
+        Returns a tuple of (should_continue, force_translation, retranslate_entries).
         """
 
         entries = list(entries)
         if not entries:
-            return True, False
+            return True, False, []
 
         statuses = [self.get_entry_language_status(entry) for entry in entries]
         expected_source = self.translator.source_lang
@@ -335,7 +335,7 @@ class POTranslatorApp:
         mismatched_targets = [s for s in statuses if s.translation_matches is False and not s.missing_translation]
 
         if not mismatched_sources and not mismatched_targets:
-            return True, False
+            return True, False, []
 
         lang_names = {code: data.get("name", code.upper()) for code, data in self.translator.LANGUAGES.items()}
         source_counts = Counter(s.source_lang for s in mismatched_sources if s.source_lang)
@@ -367,7 +367,16 @@ class POTranslatorApp:
         message_lines.append("Continue with translation anyway?")
 
         proceed = messagebox.askyesno("Language Mismatch", "\n".join(message_lines))
-        return proceed, proceed
+        if not proceed:
+            return False, False, []
+
+        retranslate_entries: List = [
+            entry
+            for entry, status in zip(entries, statuses)
+            if status.translation_matches is False and not status.missing_translation
+        ]
+
+        return True, bool(retranslate_entries), retranslate_entries
     def update_stats(self):
         """Update statistics display"""
         total = len(self.filtered_entries)
@@ -459,28 +468,53 @@ class POTranslatorApp:
         if not self.translator.model:
             messagebox.showerror("Error", "Please save your API key first")
             return
-        
-        untranslated = [e for e in self.entries if is_untranslated(e.msgid, e.msgstr)]
-        
-        if not untranslated:
-            messagebox.showinfo("Info", "All entries are already translated!")
+
+        self.apply_language_settings(show_status=False)
+
+        if not self.entries:
+            messagebox.showinfo("Info", "No entries loaded to translate.")
             return
 
-        proceed, force = self.validate_entries_for_translation(untranslated)
+        self.invalidate_language_analysis(entries=self.entries)
+        proceed, force_due_to_mismatch, flagged_entries = self.validate_entries_for_translation(self.entries)
         if not proceed:
             return
 
-        est_time = len(untranslated) * 4 // 60
-        if not messagebox.askyesno(
-            "Confirm Translation",
-            f"Translate {len(untranslated)} entries?\n\n"
-            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}\n"
-            f"This will use your Gemini API quota."
-        ):
+        entries_to_translate: List = []
+        seen_ids = set()
+
+        for entry in self.entries:
+            if is_untranslated(entry.msgid, entry.msgstr):
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        flagged_ids = {id(entry) for entry in flagged_entries}
+        for entry in flagged_entries:
+            if id(entry) not in seen_ids:
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        if not entries_to_translate:
+            messagebox.showinfo("Info", "All entries already match the configured languages.")
             return
 
-        self.start_translation(untranslated, force=force)
-    
+        est_time = len(entries_to_translate) * 4 // 60
+        prompt_lines = [
+            f"Translate {len(entries_to_translate)} entries?",
+        ]
+        if flagged_ids:
+            prompt_lines.append(f"Re-checking {len(flagged_ids)} existing translation(s).")
+        prompt_lines.extend([
+            "",
+            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}",
+            "This will use your Gemini API quota.",
+        ])
+        if not messagebox.askyesno("Confirm Translation", "\n".join(prompt_lines)):
+            return
+
+        force = force_due_to_mismatch or bool(flagged_ids)
+        self.start_translation(entries_to_translate, force=force)
+
     def translate_selected(self):
         """Translate selected entries"""
         if self.translating:
@@ -490,32 +524,55 @@ class POTranslatorApp:
         if not self.translator.model:
             messagebox.showerror("Error", "Please save your API key first")
             return
-        
         if self.table.get_selected_count() == 0:
             messagebox.showwarning("Warning", "Please select entries to translate")
             return
-        
+
         selected = self.table.get_selected_entries(self.entries)
-        untranslated = [e for e in selected if is_untranslated(e.msgid, e.msgstr)]
-        
-        if not untranslated:
-            messagebox.showinfo("Info", "Selected entries are already translated!")
+        if not selected:
+            messagebox.showinfo("Info", "No selectable entries found for translation.")
             return
 
-        proceed, force = self.validate_entries_for_translation(untranslated)
+        self.apply_language_settings(show_status=False)
+        self.invalidate_language_analysis(entries=selected)
+
+        proceed, force_due_to_mismatch, flagged_entries = self.validate_entries_for_translation(selected)
         if not proceed:
             return
 
-        est_time = len(untranslated) * 4 // 60
-        if not messagebox.askyesno(
-            "Confirm Translation",
-            f"Translate {len(untranslated)} selected entries?\n\n"
-            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}"
-        ):
+        entries_to_translate: List = []
+        seen_ids = set()
+        for entry in selected:
+            if is_untranslated(entry.msgid, entry.msgstr):
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        flagged_ids = {id(entry) for entry in flagged_entries}
+        for entry in flagged_entries:
+            if id(entry) not in seen_ids:
+                entries_to_translate.append(entry)
+                seen_ids.add(id(entry))
+
+        if not entries_to_translate:
+            messagebox.showinfo("Info", "Selected entries already match the configured languages.")
             return
 
-        self.start_translation(untranslated, force=force)
-    
+        est_time = len(entries_to_translate) * 4 // 60
+        prompt_lines = [
+            f"Translate {len(entries_to_translate)} selected entries?",
+        ]
+        if flagged_ids:
+            prompt_lines.append(f"Re-checking {len(flagged_ids)} existing translation(s).")
+        prompt_lines.extend([
+            "",
+            f"Estimated time: ~{est_time} minute{'s' if est_time != 1 else ''}",
+        ])
+        if not messagebox.askyesno("Confirm Translation", "\n".join(prompt_lines)):
+            return
+
+        force = force_due_to_mismatch or bool(flagged_ids)
+        self.start_translation(entries_to_translate, force=force)
+
     def start_translation(self, entries_to_translate, force=False):
         """Start translation process with parallel processing"""
         self.apply_language_settings(show_status=False)
