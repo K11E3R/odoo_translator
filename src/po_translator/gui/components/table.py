@@ -479,7 +479,7 @@ class TranslationTable:
             self.clear_selection_button.configure(state=state)
 
     def update_header_checkbox(self):
-        """Synchronise the header checkbox with the selection state."""
+        """Synchronize the header checkbox with the selection state."""
 
         if self._updating_header:
             return
