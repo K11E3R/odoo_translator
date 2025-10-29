@@ -259,7 +259,7 @@ class Sidebar:
             command=self.callbacks['delete_selected'],
             height=38,
             fg_color=THEME.ACCENT_DANGER,
-            hover_color=self._darken_color(THEME.ACCENT_DANGER),
+            hover_color=THEME.ACCENT_DANGER_HOVER,
             font=THEME.font(size=12, weight="bold"),
             state="disabled"
         )
