@@ -552,7 +552,8 @@ class POTranslatorApp:
         current_source = self.translator.source_lang
         if dominant_lang == current_source:
             fallback_targets = [code for code in self.translator.LANGUAGES if code not in {dominant_lang}]
-            new_target = fallback_targets[0] if fallback_targets else current_source
+            sorted_targets = sorted(fallback_targets)
+            new_target = sorted_targets[0] if sorted_targets else current_source
         else:
             new_target = current_source
 
