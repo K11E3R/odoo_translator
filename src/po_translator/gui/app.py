@@ -23,6 +23,7 @@ from po_translator.utils.logger import get_logger
 from .components import Sidebar, Toolbar, TranslationTable, StatusBar
 from .dialogs import EditDialog, ExportDialog, StatisticsDialog
 from .widgets import UndoManager
+from .theme import THEME, apply_root_theme
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -67,10 +68,12 @@ class POTranslatorApp:
         self.root = ctk.CTk()
         self.root.title("PO Translator • Advanced Odoo Translation Tool")
         self.root.geometry("1500x900")
-        
+
         # Ensure window decorations are visible (for WSL/Linux)
         self.root.resizable(True, True)
         self.root.minsize(1200, 700)
+
+        apply_root_theme(self.root)
         
         self.setup_ui()
         self.load_config()
@@ -111,7 +114,7 @@ class POTranslatorApp:
         self.sidebar.disable_file_buttons()
 
         # Content area
-        content = ctk.CTkFrame(self.root, corner_radius=0, fg_color="#0f0f0f")
+        content = ctk.CTkFrame(self.root, corner_radius=0, fg_color=THEME.SURFACE)
         content.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
         content.grid_rowconfigure(2, weight=1)
         content.grid_columnconfigure(0, weight=1)

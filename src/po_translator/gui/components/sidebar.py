@@ -4,6 +4,8 @@ Left sidebar with file operations, translation controls, and statistics
 """
 import customtkinter as ctk
 
+from ..theme import THEME
+
 
 class Sidebar:
     """Sidebar component with controls and statistics"""
@@ -27,9 +29,9 @@ class Sidebar:
             parent,
             width=320,
             corner_radius=0,
-            fg_color="#1e1e1e",
-            scrollbar_button_color="#2a2a2a",
-            scrollbar_button_hover_color="#3a3a3a"
+            fg_color=THEME.SIDEBAR_BG,
+            scrollbar_button_color=THEME.SIDEBAR_SCROLLBAR,
+            scrollbar_button_hover_color=THEME.SIDEBAR_SCROLLBAR_HOVER
         )
         self.frame.grid(row=0, column=0, rowspan=2, sticky="nsew")
         # Note: CTkScrollableFrame doesn't support grid_propagate
@@ -55,19 +57,19 @@ class Sidebar:
             header,
             text="⚡ PO Translator",
             font=ctk.CTkFont(size=24, weight="bold"),
-            text_color="#ffffff"
+            text_color=THEME.TEXT_PRIMARY
         ).pack(anchor="w")
-        
+
         ctk.CTkLabel(
             header,
             text="Professional Odoo Translation Tool",
             font=ctk.CTkFont(size=12),
-            text_color="#888888"
+            text_color=THEME.TEXT_MUTED
         ).pack(anchor="w", pady=(8, 0))
     
     def create_separator(self, row):
         """Create separator line"""
-        ctk.CTkFrame(self.frame, height=1, fg_color="#333333").grid(
+        ctk.CTkFrame(self.frame, height=1, fg_color=THEME.DIVIDER).grid(
             row=row, column=0, sticky="ew", padx=20, pady=(0, 20)
         )
     
@@ -76,15 +78,29 @@ class Sidebar:
         self.create_section_label("FILE OPERATIONS", 2)
         
         self.btn_import = self.create_button(
-            "📁  Import Files", self.callbacks['import_files'], 3, "#2563eb"
+            "📁  Import Files",
+            self.callbacks['import_files'],
+            3,
+            THEME.ACCENT_PRIMARY,
+            hover=THEME.ACCENT_PRIMARY_HOVER
         )
-        
+
         self.btn_save = self.create_button(
-            "💾  Save", self.callbacks['save_file'], 4, "#059669", disabled=True
+            "💾  Save",
+            self.callbacks['save_file'],
+            4,
+            THEME.ACCENT_SUCCESS,
+            hover=THEME.ACCENT_SUCCESS_HOVER,
+            disabled=True
         )
-        
+
         self.btn_export = self.create_button(
-            "📤  Export", self.callbacks['show_export_dialog'], 5, "#7c3aed", disabled=True
+            "📤  Export",
+            self.callbacks['show_export_dialog'],
+            5,
+            THEME.ACCENT_SECONDARY,
+            hover=THEME.ACCENT_SECONDARY_HOVER,
+            disabled=True
         )
     
     def create_translation_section(self):
@@ -97,12 +113,19 @@ class Sidebar:
             show="•",
             height=40,
             border_width=0,
-            fg_color="#2a2a2a"
+            fg_color=THEME.INPUT_BG,
+            text_color=THEME.TEXT_PRIMARY,
+            placeholder_text_color=THEME.TEXT_PLACEHOLDER
         )
         self.api_key_entry.grid(row=7, column=0, padx=20, pady=(0, 8), sticky="ew")
         
         self.create_button(
-            "🔑  Save API Key", self.callbacks['save_api_key'], 8, "#374151", height=35
+            "🔑  Save API Key",
+            self.callbacks['save_api_key'],
+            8,
+            THEME.SURFACE_RAISED,
+            hover=THEME.SURFACE_HOVER,
+            height=35
         )
         
         # Language selection
@@ -116,7 +139,7 @@ class Sidebar:
             lang_frame,
             text="Source:",
             font=ctk.CTkFont(size=10),
-            text_color="#888888",
+            text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=0, column=0, sticky="w", pady=(0, 4))
         
@@ -127,8 +150,10 @@ class Sidebar:
             values=["English", "French", "Spanish", "German", "Italian", "Portuguese", "Dutch", "Arabic"],
             command=self.callbacks.get('language_changed'),
             height=32,
-            fg_color="#2a2a2a",
-            button_color="#374151",
+            fg_color=THEME.INPUT_BG,
+            button_color=THEME.ACCENT_PRIMARY,
+            button_hover_color=THEME.ACCENT_PRIMARY_HOVER,
+            text_color=THEME.TEXT_PRIMARY,
             font=ctk.CTkFont(size=11)
         )
         self.source_lang_menu.grid(row=1, column=0, sticky="ew", padx=(0, 5))
@@ -138,7 +163,7 @@ class Sidebar:
             lang_frame,
             text="Target:",
             font=ctk.CTkFont(size=10),
-            text_color="#888888",
+            text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=0, column=1, sticky="w", pady=(0, 4))
         
@@ -149,8 +174,10 @@ class Sidebar:
             values=["English", "French", "Spanish", "German", "Italian", "Portuguese", "Dutch", "Arabic"],
             command=self.callbacks.get('language_changed'),
             height=32,
-            fg_color="#2a2a2a",
-            button_color="#374151",
+            fg_color=THEME.INPUT_BG,
+            button_color=THEME.ACCENT_PRIMARY,
+            button_hover_color=THEME.ACCENT_PRIMARY_HOVER,
+            text_color=THEME.TEXT_PRIMARY,
             font=ctk.CTkFont(size=11)
         )
         self.target_lang_menu.grid(row=1, column=1, sticky="ew", padx=(5, 0))
@@ -163,7 +190,7 @@ class Sidebar:
             variable=self.auto_detect_var,
             command=self.callbacks.get('language_changed'),
             font=ctk.CTkFont(size=11),
-            text_color="#888888"
+            text_color=THEME.TEXT_MUTED
         )
         self.auto_detect_check.grid(row=10, column=0, padx=20, pady=(0, 8), sticky="w")
         
@@ -173,8 +200,8 @@ class Sidebar:
             command=self.callbacks['translate_all'],
             height=55,
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="#10b981",
-            hover_color="#059669",
+            fg_color=THEME.ACCENT_SUCCESS,
+            hover_color=THEME.ACCENT_SUCCESS_HOVER,
             corner_radius=8,
             state="disabled"
         )
@@ -186,8 +213,8 @@ class Sidebar:
             command=self.callbacks['translate_selected'],
             height=42,
             font=ctk.CTkFont(size=13, weight="bold"),
-            fg_color="#0891b2",
-            hover_color="#0e7490",
+            fg_color=THEME.ACCENT_SECONDARY,
+            hover_color=THEME.ACCENT_SECONDARY_HOVER,
             corner_radius=8,
             state="disabled"
         )
@@ -207,8 +234,8 @@ class Sidebar:
             text="↶ Undo",
             command=self.callbacks['undo'],
             height=38,
-            fg_color="#374151",
-            hover_color="#1f2937",
+            fg_color=THEME.SURFACE_RAISED,
+            hover_color=THEME.SURFACE_HOVER,
             state="disabled"
         )
         self.btn_undo.grid(row=0, column=0, padx=(0, 4), sticky="ew")
@@ -218,8 +245,8 @@ class Sidebar:
             text="↷ Redo",
             command=self.callbacks['redo'],
             height=38,
-            fg_color="#374151",
-            hover_color="#1f2937",
+            fg_color=THEME.SURFACE_RAISED,
+            hover_color=THEME.SURFACE_HOVER,
             state="disabled"
         )
         self.btn_redo.grid(row=0, column=1, padx=(4, 0), sticky="ew")
@@ -229,27 +256,32 @@ class Sidebar:
             text="🗑️ Delete Selected",
             command=self.callbacks['delete_selected'],
             height=38,
-            fg_color="#991b1b",
-            hover_color="#7f1d1d",
+            fg_color=THEME.ACCENT_DANGER,
+            hover_color=self._darken_color(THEME.ACCENT_DANGER),
             state="disabled"
         )
         self.btn_delete.grid(row=1, column=0, columnspan=2, pady=(8, 0), sticky="ew")
 
         self.create_button(
-            "📊  Statistics", self.callbacks['show_statistics'], 15, "#6366f1", height=38
+            "📊  Statistics",
+            self.callbacks['show_statistics'],
+            15,
+            THEME.ACCENT_PRIMARY,
+            hover=THEME.ACCENT_PRIMARY_HOVER,
+            height=38
         )
     
     def create_stats_section(self):
         """Create statistics section"""
         self.create_section_label("STATISTICS", 16)
         
-        stats_frame = ctk.CTkFrame(self.frame, fg_color="#2a2a2a", corner_radius=8)
+        stats_frame = ctk.CTkFrame(self.frame, fg_color=THEME.SURFACE_ALT, corner_radius=12)
         stats_frame.grid(row=17, column=0, padx=20, pady=(0, 10), sticky="ew")
-        
+
         self.lbl_total = self.create_stat_label(stats_frame, "Total Entries", "0", 0)
-        self.lbl_translated = self.create_stat_label(stats_frame, "✅ Translated", "0", 1, "#10b981")
-        self.lbl_untranslated = self.create_stat_label(stats_frame, "⏳ Pending", "0", 2, "#f59e0b")
-        self.lbl_selected = self.create_stat_label(stats_frame, "☑ Selected", "0", 3, "#3b82f6")
+        self.lbl_translated = self.create_stat_label(stats_frame, "✅ Translated", "0", 1, THEME.ACCENT_SUCCESS)
+        self.lbl_untranslated = self.create_stat_label(stats_frame, "⏳ Pending", "0", 2, THEME.ACCENT_WARNING)
+        self.lbl_selected = self.create_stat_label(stats_frame, "☑ Selected", "0", 3, THEME.ACCENT_SECONDARY)
     
     def create_footer(self):
         """Create footer"""
@@ -260,7 +292,7 @@ class Sidebar:
             footer,
             text="v1.0 • Made with ❤️ for Odoo",
             font=ctk.CTkFont(size=11),
-            text_color="#666666"
+            text_color=THEME.TEXT_MUTED
         ).pack()
     
     def create_section_label(self, text, row):
@@ -269,11 +301,11 @@ class Sidebar:
             self.frame,
             text=text,
             font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#888888",
+            text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).grid(row=row, column=0, padx=24, pady=(24, 12), sticky="w")
     
-    def create_button(self, text, command, row, color, height=44, disabled=False):
+    def create_button(self, text, command, row, color, *, hover=None, height=44, disabled=False):
         """Create button with improved styling"""
         btn = ctk.CTkButton(
             self.frame,
@@ -281,28 +313,29 @@ class Sidebar:
             command=command,
             height=height,
             fg_color=color,
-            hover_color=self.darken_color(color),
+            hover_color=hover or self._darken_color(color),
             corner_radius=10,
             border_width=0,
             font=ctk.CTkFont(size=13, weight="bold"),
+            text_color=THEME.TEXT_PRIMARY,
             state="disabled" if disabled else "normal"
         )
         btn.grid(row=row, column=0, padx=24, pady=(0, 10), sticky="ew")
         return btn
-    
-    def create_stat_label(self, parent, label, value, row, color="#888888"):
+
+    def create_stat_label(self, parent, label, value, row, color=THEME.TEXT_SECONDARY):
         """Create stat label"""
         frame = ctk.CTkFrame(parent, fg_color="transparent")
         frame.pack(fill="x", padx=15, pady=8)
-        
+
         ctk.CTkLabel(
             frame,
             text=label,
             font=ctk.CTkFont(size=11),
-            text_color="#666666",
+            text_color=THEME.TEXT_MUTED,
             anchor="w"
         ).pack(side="left")
-        
+
         lbl = ctk.CTkLabel(
             frame,
             text=value,
@@ -312,8 +345,8 @@ class Sidebar:
         )
         lbl.pack(side="right")
         return lbl
-    
-    def darken_color(self, hex_color):
+
+    def _darken_color(self, hex_color):
         """Darken hex color"""
         hex_color = hex_color.lstrip('#')
         r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
