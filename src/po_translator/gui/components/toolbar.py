@@ -89,7 +89,11 @@ class Toolbar:
     def get_search_query(self):
         """Get current search query"""
         return self.search_entry.get().lower()
-    
+
+    def get_search_text(self):
+        """Get the raw search text"""
+        return self.search_entry.get()
+
     def get_filter_value(self):
         """Get current filter value"""
         return self.filter_var.get()

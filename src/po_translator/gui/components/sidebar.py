@@ -18,7 +18,10 @@ class Sidebar:
         """
         self.parent = parent
         self.callbacks = callbacks
-        
+        self.translation_enabled = False
+        self.has_selection = False
+        self.btn_delete = None
+
         # Scrollable sidebar frame
         self.frame = ctk.CTkScrollableFrame(
             parent,
@@ -220,7 +223,18 @@ class Sidebar:
             state="disabled"
         )
         self.btn_redo.grid(row=0, column=1, padx=(4, 0), sticky="ew")
-        
+
+        self.btn_delete = ctk.CTkButton(
+            actions_frame,
+            text="🗑️ Delete Selected",
+            command=self.callbacks['delete_selected'],
+            height=38,
+            fg_color="#991b1b",
+            hover_color="#7f1d1d",
+            state="disabled"
+        )
+        self.btn_delete.grid(row=1, column=0, columnspan=2, pady=(8, 0), sticky="ew")
+
         self.create_button(
             "📊  Statistics", self.callbacks['show_statistics'], 15, "#6366f1", height=38
         )
@@ -312,26 +326,47 @@ class Sidebar:
         self.lbl_translated.configure(text=str(translated))
         self.lbl_untranslated.configure(text=str(untranslated))
         self.lbl_selected.configure(text=str(selected))
+        self.set_selection_actions_enabled(selected > 0)
     
     def update_undo_redo(self, can_undo, can_redo):
         """Update undo/redo button states"""
         self.btn_undo.configure(state="normal" if can_undo else "disabled")
         self.btn_redo.configure(state="normal" if can_redo else "disabled")
-    
+
     def enable_translation_buttons(self):
         """Enable translation buttons"""
-        self.btn_translate.configure(state="normal")
-        self.btn_translate_selected.configure(state="normal")
-    
+        self.translation_enabled = True
+        self._update_translation_buttons()
+
     def disable_translation_buttons(self):
         """Disable translation buttons"""
-        self.btn_translate.configure(state="disabled")
-        self.btn_translate_selected.configure(state="disabled")
-    
+        self.translation_enabled = False
+        self._update_translation_buttons()
+
     def enable_file_buttons(self):
         """Enable file operation buttons"""
         self.btn_save.configure(state="normal")
         self.btn_export.configure(state="normal")
+
+    def disable_file_buttons(self):
+        """Disable file operation buttons"""
+        self.btn_save.configure(state="disabled")
+        self.btn_export.configure(state="disabled")
+
+    def set_selection_actions_enabled(self, has_selection):
+        """Enable/disable selection dependent actions"""
+        self.has_selection = has_selection
+        state = "normal" if has_selection else "disabled"
+        if self.btn_delete:
+            self.btn_delete.configure(state=state)
+        self._update_translation_buttons()
+
+    def _update_translation_buttons(self):
+        """Update translation button states based on current flags"""
+        translate_state = "normal" if self.translation_enabled else "disabled"
+        selected_state = "normal" if self.has_selection else "disabled"
+        self.btn_translate.configure(state=translate_state)
+        self.btn_translate_selected.configure(state=selected_state)
     
     def get_language_settings(self):
         """Get current language settings"""

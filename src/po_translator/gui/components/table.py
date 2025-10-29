@@ -97,7 +97,7 @@ class TranslationTable:
     def populate(self, entries, merger, display_limit=50):
         """
         Populate table with entries
-        
+
         Args:
             entries: List of PO entries to display
             merger: POMerger instance for module lookup
@@ -105,13 +105,13 @@ class TranslationTable:
         """
         for widget in self.table.winfo_children():
             widget.destroy()
-        
+
+        self.entries = entries
+
         if not entries:
             self.show_empty_state()
             return
-        
-        self.entries = entries
-        
+
         # Create rows
         for idx, entry in enumerate(entries[:display_limit]):
             self.create_row(idx, entry, merger)
