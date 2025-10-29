@@ -1,0 +1,65 @@
+# Translation with variables and formatting
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Bienvenue %(name)s!"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Vous avez %s nouveaux messages"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Le montant total est de {amount} {currency}"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Commande ${order_ref} confirmée"
+msgstr ""
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_form
+msgid "<b>Important:</b> Vérifiez les informations"
+msgstr ""
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_form
+msgid "<i>Note:</i> Ce champ est obligatoire"
+msgstr ""
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_form
+msgid "Ligne 1\\nLigne 2\\nLigne 3"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Erreur: %(error)s à la ligne %(line)s"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Traitement de %s sur %s éléments"
+msgstr ""
+
+#. module: test_module
+#: code:addons/test_module/models/test.py:0
+#, python-format
+msgid "Total: {count} articles pour {total} €"
+msgstr ""
+

@@ -1,0 +1,59 @@
+# Translation of Odoo Server.
+# This file contains mixed languages (should auto-detect and correct)
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__name
+msgid "Nom du client"
+msgstr "Customer Name"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__email
+msgid "Adresse email"
+msgstr "Email Address"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__phone
+msgid "Numéro de téléphone"
+msgstr "Phone Number"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__address
+msgid "Adresse complète"
+msgstr "Full Address"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__city
+msgid "Ville"
+msgstr "City"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__country
+msgid "Pays"
+msgstr "Country"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__zip
+msgid "Code postal"
+msgstr "ZIP Code"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__status
+msgid "Statut"
+msgstr "Status"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__date
+msgid "Date de création"
+msgstr "Creation Date"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_test__active
+msgid "Actif"
+msgstr "Active"
+

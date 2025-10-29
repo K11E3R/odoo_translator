@@ -1,0 +1,80 @@
+#
+msgid ""
+msgstr ""
+"Language: fr\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_order_form
+msgid "Annuler"
+msgstr ""
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__product
+msgid "Article"
+msgstr ""
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__customer
+msgid "Client"
+msgstr ""
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_order_form
+msgid "Confirm Order"
+msgstr "Confirmer la commande"
+
+#. module: test_module
+#: model:ir.ui.view,arch_db:test_module.view_order_form
+msgid "Create a new order"
+msgstr "Créer une nouvelle commande"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__invoice
+msgid "Facture"
+msgstr ""
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__delivery
+msgid "Livraison"
+msgstr ""
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__partner
+msgid "Partner"
+msgstr "Partenaire"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__payment
+msgid "Payment"
+msgstr "Paiement"
+
+#. module: test_module
+#: model:ir.model.fields,help_description:test_module.field_sale_order__note
+msgid "Please enter your comments here"
+msgstr "Veuillez saisir vos commentaires ici"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__name
+msgid "Purchase Order"
+msgstr "Bon de commande"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__quotation
+msgid "Quotation"
+msgstr "Devis"
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__inventory
+msgid "Stock"
+msgstr ""
+
+#. module: test_module
+#: model:ir.model.fields,field_description:test_module.field_sale_order__vendor
+msgid "Supplier"
+msgstr "Fournisseur"
+
+#. module: test_module
+#: model:ir.model.fields,help_description:test_module.field_sale_order__amount
+msgid "The total amount is calculated automatically"
+msgstr "Le montant total est calculé automatiquement"
