@@ -4,6 +4,8 @@ Dialog showing translation statistics and cache information
 """
 import customtkinter as ctk
 
+from ..theme import THEME
+
 
 class StatisticsDialog:
     """Dialog for displaying statistics"""
@@ -35,14 +37,15 @@ class StatisticsDialog:
     def setup_ui(self):
         """Setup dialog UI"""
         # Header
-        header = ctk.CTkFrame(self.dialog, fg_color="#1a1a1a", height=60, corner_radius=0)
+        header = ctk.CTkFrame(self.dialog, fg_color=THEME.SURFACE_ALT, height=60, corner_radius=0)
         header.pack(fill="x")
         header.pack_propagate(False)
         
         ctk.CTkLabel(
             header,
             text="📊  Translation Statistics",
-            font=ctk.CTkFont(size=18, weight="bold")
+            font=THEME.font(size=18, weight="bold"),
+            text_color=THEME.TEXT_PRIMARY,
         ).pack(side="left", padx=25, pady=15)
         
         # Content
@@ -77,13 +80,14 @@ class StatisticsDialog:
         ]
         
         for section, items in stats_data:
-            section_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=8)
+            section_frame = ctk.CTkFrame(content, fg_color=THEME.SURFACE_RAISED, corner_radius=12)
             section_frame.pack(fill="x", pady=(0, 15))
             
             ctk.CTkLabel(
                 section_frame,
                 text=section,
-                font=ctk.CTkFont(size=14, weight="bold"),
+                font=THEME.font(size=14, weight="bold"),
+                text_color=THEME.TEXT_PRIMARY,
                 anchor="w"
             ).pack(padx=20, pady=(15, 10), fill="x")
             
@@ -94,20 +98,20 @@ class StatisticsDialog:
                 ctk.CTkLabel(
                     row,
                     text=label,
-                    font=ctk.CTkFont(size=12),
-                    text_color="#888888",
+                    font=THEME.font(size=12),
+                    text_color=THEME.TEXT_MUTED,
                     anchor="w"
                 ).pack(side="left")
-                
+
                 ctk.CTkLabel(
                     row,
                     text=value,
-                    font=ctk.CTkFont(size=12, weight="bold"),
-                    text_color="#10b981",
+                    font=THEME.font(size=12, weight="bold"),
+                    text_color=THEME.ACCENT_SUCCESS,
                     anchor="e"
                 ).pack(side="right")
             
-            ctk.CTkFrame(section_frame, height=1, fg_color="transparent").pack(pady=10)
+            ctk.CTkFrame(section_frame, height=1, fg_color=THEME.DIVIDER).pack(pady=10, fill="x", padx=20)
         
         # Footer
         footer = ctk.CTkFrame(self.dialog, fg_color="transparent")
@@ -118,17 +122,21 @@ class StatisticsDialog:
             text="Clear Cache",
             command=self.clear_cache,
             height=40,
-            fg_color="#dc2626",
-            hover_color="#b91c1c"
+            fg_color=THEME.ACCENT_DANGER,
+            hover_color="#b91c1c",
+            text_color="#ffffff",
+            font=THEME.font(size=12, weight="bold"),
         ).pack(side="left", fill="x", expand=True, padx=(0, 10))
-        
+
         ctk.CTkButton(
             footer,
             text="Close",
             command=self.dialog.destroy,
             height=40,
-            fg_color="#374151",
-            hover_color="#1f2937"
+            fg_color=THEME.SURFACE_RAISED,
+            hover_color=THEME.SURFACE_HOVER,
+            text_color=THEME.TEXT_PRIMARY,
+            font=THEME.font(size=12),
         ).pack(side="left", fill="x", expand=True)
     
     def clear_cache(self):
