@@ -3,7 +3,7 @@ name = "po-translator"
 version = "1.0.0"
 description = "AI-assisted translation workflow for Odoo PO files"
 readme = "README.md"
-authors = [{ name = "BOUBOU" }]
+authors = [{ name = "k11e3r" }]
 license = { text = "MIT" }
 requires-python = ">=3.11"
 dependencies = [
