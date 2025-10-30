@@ -1,76 +1,85 @@
 #!/usr/bin/env python3
+"""Quick smoke-test helper for the translator.
+
+This module used to execute immediately when imported, which broke
+``python -m unittest`` discovery.  It now exposes a ``main`` helper so the
+script can still be launched manually while staying import-safe.
 """
-Quick test script for the translator
-"""
-import sys
+
+from __future__ import annotations
+
 import os
+import sys
+from typing import Iterable, Tuple
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from po_translator.translator import Translator
-from po_translator.utils.logger import setup_logger
+def _bootstrap_translator():
+    """Import the translator lazily and configure logging."""
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+    from po_translator.translator import Translator  # type: ignore
+    from po_translator.utils.logger import setup_logger  # type: ignore
 
-# Setup logging
-setup_logger('DEBUG')
+    setup_logger('DEBUG')
+    return Translator()
 
-print("="*60)
-print("PO Translator - Quick Test")
-print("="*60)
 
-# Test 1: Initialize translator
-print("\n1. Initializing translator...")
-translator = Translator()
+def _run_smoke_tests(translator) -> None:
+    print("=" * 60)
+    print("PO Translator - Quick Test")
+    print("=" * 60)
 
-# Check if API key is available
-api_key = os.environ.get('GEMINI_API_KEY')
-if api_key:
-    translator.set_api_key(api_key)
-    print(f"   [OK] API key loaded from environment")
-else:
-    print(f"   [WARNING] No API key found. Set GEMINI_API_KEY environment variable.")
-    print(f"   Translator will not work without API key.")
-    sys.exit(1)
+    print("\n1. Initializing translator...")
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if api_key:
+        translator.set_api_key(api_key)
+        print("   [OK] API key loaded from environment")
+    else:
+        print("   [WARNING] No API key found. Set GEMINI_API_KEY environment variable.")
+        print("   Translator will not work without API key.")
 
-# Test 2: Set languages
-print("\n2. Setting languages (English -> French)...")
-translator.set_languages('en', 'fr', auto_detect=True)
-print(f"   [OK] Languages set")
+    print("\n2. Setting languages (English -> French)...")
+    translator.set_languages('en', 'fr', auto_detect=True)
+    print("   [OK] Languages set")
 
-# Test 3: Test basic translation
-print("\n3. Testing basic translations...")
-test_cases = [
-    ("Purchase Order", "en", "fr"),
-    ("Invoice", "en", "fr"),
-    ("Customer", "en", "fr"),
-    ("Bon de commande", "fr", "en"),  # Should detect French and translate
-]
+    print("\n3. Testing basic translations...")
+    test_cases: Iterable[Tuple[str, str, str]] = (
+        ("Purchase Order", "en", "fr"),
+        ("Invoice", "en", "fr"),
+        ("Customer", "en", "fr"),
+        ("Bon de commande", "fr", "en"),
+    )
 
-for text, from_lang, to_lang in test_cases:
-    result = translator.translate(text, from_lang, to_lang, context="Odoo ERP")
-    print(f"   {text} ({from_lang}->{to_lang}) => {result}")
+    for text, from_lang, to_lang in test_cases:
+        result = translator.translate(text, from_lang, to_lang, context="Odoo ERP")
+        print(f"   {text} ({from_lang}->{to_lang}) => {result}")
 
-# Test 4: Test variable preservation
-print("\n4. Testing variable preservation...")
-test_vars = [
-    "Welcome %(name)s!",
-    "You have %s new messages",
-    "Total: {amount} {currency}",
-    "Order ${ref} confirmed"
-]
+    print("\n4. Testing variable preservation...")
+    test_vars = (
+        "Welcome %(name)s!",
+        "You have %s new messages",
+        "Total: {amount} {currency}",
+        "Order ${ref} confirmed",
+    )
 
-for text in test_vars:
-    result = translator.translate(text, 'en', 'fr', context="Odoo ERP")
-    print(f"   {text}")
-    print(f"   => {result}")
+    for text in test_vars:
+        result = translator.translate(text, 'en', 'fr', context="Odoo ERP")
+        print(f"   {text}")
+        print(f"   => {result}")
 
-# Test 5: Show statistics
-print("\n5. Translation statistics:")
-stats = translator.get_stats()
-for key, value in stats.items():
-    print(f"   {key}: {value}")
+    print("\n5. Translation statistics:")
+    for key, value in translator.get_stats().items():
+        print(f"   {key}: {value}")
 
-print("\n" + "="*60)
-print("Test completed!")
-print("="*60)
+    print("\n" + "=" * 60)
+    print("Test completed!")
+    print("=" * 60)
 
+
+def main() -> int:
+    translator = _bootstrap_translator()
+    _run_smoke_tests(translator)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

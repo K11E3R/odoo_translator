@@ -4,14 +4,17 @@ Translator v3 — Optimized for Odoo .po files
 - Smart language detection (EN↔FR)
 - Skips redundant French→French
 - Odoo glossary-aware prompt
+- Offline heuristic glossary translator
 - Caching, validation, retry
 - Compatible with test_translation_debug.py & app.py
 """
 
+import os
 import time
 import json
 import re
 from pathlib import Path
+from typing import Dict, Iterable, Optional, Tuple
 
 try:
     import google.generativeai as genai
@@ -19,6 +22,7 @@ try:
     AVAILABLE = True
 except ImportError:
     AVAILABLE = False
+    genai = None  # type: ignore
 
 from po_translator.utils.language import is_french_text, is_english_text, detect_language
 from po_translator.utils.file_utils import sanitize_text
@@ -65,6 +69,218 @@ class TranslationCache:
 
 
 # ==========================================================
+# OFFLINE TRANSLATOR
+# ==========================================================
+class OfflineTranslatorEngine:
+    """Lightweight heuristic translator for offline scenarios."""
+
+    PLACEHOLDER_PATTERN = re.compile(r"(%\([^)]+\)s|%s|\{[^}]+\}|\$\{[^}]+\}|{{[^}]+}})")
+
+    OFFLINE_DICTIONARY: Dict[Tuple[str, str], Dict[str, Iterable[Tuple[str, str]]]] = {
+        ("en", "fr"): {
+            "phrases": (
+                ("purchase order", "bon de commande"),
+                ("sales order", "commande client"),
+                ("delivery order", "bon de livraison"),
+                ("quotation", "devis"),
+                ("confirm the order", "confirmer la commande"),
+                ("confirm order", "confirmer la commande"),
+                ("create invoice", "créer la facture"),
+                ("customer invoice", "facture client"),
+                ("vendor bill", "facture fournisseur"),
+                ("total amount", "montant total"),
+                ("payment terms", "conditions de paiement"),
+            ),
+            "words": (
+                ("confirm", "confirmer"),
+                ("confirming", "confirmation"),
+                ("confirmations", "confirmations"),
+                ("order", "commande"),
+                ("orders", "commandes"),
+                ("customer", "client"),
+                ("customers", "clients"),
+                ("vendor", "fournisseur"),
+                ("vendors", "fournisseurs"),
+                ("invoice", "facture"),
+                ("invoices", "factures"),
+                ("quotation", "devis"),
+                ("quotations", "devis"),
+                ("delivery", "livraison"),
+                ("product", "article"),
+                ("products", "articles"),
+                ("amount", "montant"),
+                ("total", "total"),
+                ("create", "créer"),
+                ("new", "nouveau"),
+                ("draft", "brouillon"),
+                ("validate", "valider"),
+                ("warehouse", "entrepôt"),
+                ("stock", "stock"),
+                ("partner", "partenaire"),
+                ("payment", "paiement"),
+                ("payments", "paiements"),
+                ("due", "dû"),
+                ("deadline", "échéance"),
+                ("comment", "commentaire"),
+                ("comments", "commentaires"),
+                ("please", "veuillez"),
+                ("save", "enregistrer"),
+                ("cancel", "annuler"),
+                ("apply", "appliquer"),
+                ("amounts", "montants"),
+                ("lines", "lignes"),
+            ),
+        },
+        ("fr", "en"): {
+            "phrases": (
+                ("bon de commande", "purchase order"),
+                ("bon de livraison", "delivery order"),
+                ("facture client", "customer invoice"),
+                ("facture fournisseur", "vendor bill"),
+                ("confirmer la commande", "confirm the order"),
+                ("montant total", "total amount"),
+            ),
+            "words": (
+                ("commande", "order"),
+                ("commandes", "orders"),
+                ("client", "customer"),
+                ("clients", "customers"),
+                ("fournisseur", "vendor"),
+                ("fournisseurs", "vendors"),
+                ("facture", "invoice"),
+                ("factures", "invoices"),
+                ("devis", "quotation"),
+                ("livraison", "delivery"),
+                ("article", "product"),
+                ("articles", "products"),
+                ("montant", "amount"),
+                ("montants", "amounts"),
+                ("paiement", "payment"),
+                ("paiements", "payments"),
+                ("valider", "validate"),
+                ("créer", "create"),
+                ("annuler", "cancel"),
+                ("enregistrer", "save"),
+                ("commentaire", "comment"),
+                ("commentaires", "comments"),
+                ("entrepôt", "warehouse"),
+            ),
+        },
+        ("en", "es"): {
+            "phrases": (
+                ("sales order", "orden de venta"),
+                ("purchase order", "orden de compra"),
+                ("confirm the order", "confirmar el pedido"),
+            ),
+            "words": (
+                ("order", "pedido"),
+                ("orders", "pedidos"),
+                ("invoice", "factura"),
+                ("invoices", "facturas"),
+                ("customer", "cliente"),
+                ("customers", "clientes"),
+                ("total", "total"),
+                ("amount", "importe"),
+                ("confirm", "confirmar"),
+                ("create", "crear"),
+            ),
+        },
+        ("es", "en"): {
+            "phrases": (
+                ("orden de venta", "sales order"),
+                ("orden de compra", "purchase order"),
+            ),
+            "words": (
+                ("pedido", "order"),
+                ("pedidos", "orders"),
+                ("factura", "invoice"),
+                ("facturas", "invoices"),
+                ("cliente", "customer"),
+                ("clientes", "customers"),
+                ("confirmar", "confirm"),
+                ("crear", "create"),
+            ),
+        },
+    }
+
+    WORD_PATTERN = re.compile(r"[A-Za-zÀ-ÿ']+")
+
+    def __init__(self):
+        self._phrase_cache: Dict[Tuple[str, str], Tuple[Tuple[Tuple[str, str], ...], Tuple[Tuple[str, str], ...]]] = {}
+
+    @staticmethod
+    def _apply_case(source: str, target: str) -> str:
+        if not source or not target:
+            return target
+
+        if source.isupper():
+            return target.upper()
+        if source.islower():
+            return target.lower()
+        if source.istitle():
+            return target.title()
+        if source[0].isupper():
+            return target[0].upper() + target[1:]
+        return target
+
+    def supports_pair(self, source: str, target: str) -> bool:
+        return (source, target) in self.OFFLINE_DICTIONARY
+
+    def _get_rules(self, source: str, target: str):
+        pair = (source, target)
+        if pair not in self._phrase_cache:
+            data = self.OFFLINE_DICTIONARY.get(pair, {"phrases": (), "words": ()})
+            phrases = tuple(sorted(data.get("phrases", ()), key=lambda item: len(item[0]), reverse=True))
+            words = tuple(data.get("words", ()))
+            self._phrase_cache[pair] = (phrases, words)
+        return self._phrase_cache[pair]
+
+    def translate(self, text: str, source: str, target: str) -> Optional[str]:
+        if not text or not text.strip():
+            return text
+
+        if not self.supports_pair(source, target):
+            return None
+
+        working = text
+        placeholders = {}
+
+        def _stash_placeholder(match):
+            token = f"__PH_{len(placeholders)}__"
+            placeholders[token] = match.group(0)
+            return token
+
+        working = self.PLACEHOLDER_PATTERN.sub(_stash_placeholder, working)
+        phrases, words = self._get_rules(source, target)
+
+        for phrase, replacement in phrases:
+            pattern = re.compile(re.escape(phrase), re.IGNORECASE)
+
+            def _phrase_repl(match):
+                return self._apply_case(match.group(0), replacement)
+
+            working = pattern.sub(_phrase_repl, working)
+
+        word_map = {source_word: target_word for source_word, target_word in words}
+
+        def _word_repl(match):
+            token = match.group(0)
+            lookup = token.lower()
+            if lookup not in word_map:
+                return token
+            translated = word_map[lookup]
+            return self._apply_case(token, translated)
+
+        working = self.WORD_PATTERN.sub(_word_repl, working)
+
+        for token, original in placeholders.items():
+            working = working.replace(token, original)
+
+        working = re.sub(r"\s+", lambda m: " " if "\n" not in m.group(0) else m.group(0), working)
+        return working.strip()
+
+
+# ==========================================================
 # TRANSLATOR
 # ==========================================================
 class Translator:
@@ -79,6 +295,13 @@ class Translator:
         "pt": {"name": "Portuguese"},
         "nl": {"name": "Dutch"},
         "ar": {"name": "Arabic"},
+        "ca": {"name": "Catalan"},
+        "ro": {"name": "Romanian"},
+        "da": {"name": "Danish"},
+        "sv": {"name": "Swedish"},
+        "no": {"name": "Norwegian"},
+        "fi": {"name": "Finnish"},
+        "gl": {"name": "Galician"},
     }
 
     ODOO_TERMS = {
@@ -108,6 +331,11 @@ class Translator:
         self.target_lang = "fr"
         self.auto_detect = True
 
+        offline_toggle = os.environ.get("PO_TRANSLATOR_OFFLINE_MODE", "0").strip().lower()
+        self.offline_mode = offline_toggle in {"1", "true", "yes", "on"}
+        self._offline_warning_pairs = set()
+        self.offline_engine = OfflineTranslatorEngine()
+
         self.last_request = 0
         self.rate_limit = 0.1  # ~10 requests/sec
 
@@ -119,16 +347,28 @@ class Translator:
             "errors": 0,
             "retries": 0,
             "auto_corrections": 0,
+            "offline_requests": 0,
         }
 
-        if api_key and AVAILABLE:
+        if api_key:
             self.set_api_key(api_key)
+
+        if self.offline_mode:
+            self.logger.info("🛜 Offline mode enabled — using heuristic glossary translator.")
 
     # ------------------------------------------------------
     # API setup
     # ------------------------------------------------------
     def set_api_key(self, api_key):
         self.api_key = api_key
+        if self.offline_mode:
+            self.logger.info("Stored API key for later use. Offline mode is active, skipping Gemini initialisation.")
+            return
+
+        if not AVAILABLE:
+            self.logger.warning("google-generativeai is not available. Install the dependency to enable online translation.")
+            return
+
         try:
             genai.configure(api_key=api_key)
             self.model = genai.GenerativeModel(
@@ -148,6 +388,21 @@ class Translator:
         except Exception as e:
             self.logger.error(f"❌ Gemini initialization failed: {e}")
             self.model = None
+
+    def set_offline_mode(self, offline: bool):
+        offline = bool(offline)
+        if offline == self.offline_mode:
+            return
+
+        self.offline_mode = offline
+
+        if offline:
+            self.logger.info("🛜 Offline mode enabled — remote API calls disabled.")
+            self.model = None
+        else:
+            self.logger.info("🌐 Offline mode disabled — remote API calls permitted.")
+            if self.api_key and AVAILABLE:
+                self.set_api_key(self.api_key)
 
     # ------------------------------------------------------
     # Prompt generation
@@ -198,11 +453,44 @@ Glossary for consistent terminology:
             return False
         return True
 
+    def configure_languages(self, source=None, target=None, auto_detect=None):
+        """Configure source/target languages and auto-detection"""
+        changed = False
+
+        if source:
+            if source not in self.LANGUAGES:
+                self.logger.warning(f"Unsupported source language: {source}")
+            elif source != self.source_lang:
+                self.source_lang = source
+                changed = True
+
+        if target:
+            if target not in self.LANGUAGES:
+                self.logger.warning(f"Unsupported target language: {target}")
+            elif target != self.target_lang:
+                self.target_lang = target
+                changed = True
+
+        if auto_detect is not None and auto_detect != self.auto_detect:
+            self.auto_detect = auto_detect
+            changed = True
+
+        if changed:
+            self.logger.info(
+                f"Language configuration updated: {self.source_lang} → {self.target_lang} (auto-detect={'on' if self.auto_detect else 'off'})"
+            )
+
+        return changed
+
+    def set_languages(self, source, target, auto_detect=True):
+        """Compatibility helper for legacy callers"""
+        self.configure_languages(source=source, target=target, auto_detect=auto_detect)
+
     # ------------------------------------------------------
     # Main translation
     # ------------------------------------------------------
     def translate(self, text, from_lang=None, to_lang=None, context=None, max_retries=1):
-        if not text or not self.model:
+        if not text:
             return text
 
         text = sanitize_text(text)
@@ -215,6 +503,29 @@ Glossary for consistent terminology:
         if cached:
             self.stats["cache_hits"] += 1
             return cached
+
+        if self.offline_mode:
+            translation = self.offline_engine.translate(text, from_lang, to_lang)
+            if translation is None:
+                pair = (from_lang, to_lang)
+                if pair not in self._offline_warning_pairs:
+                    self.logger.warning(
+                        "Offline translator does not support %s → %s yet. Returning original text.",
+                        from_lang,
+                        to_lang,
+                    )
+                    self._offline_warning_pairs.add(pair)
+                translation = text
+            else:
+                translation = translation or text
+
+            self.cache.set(text, translation, cache_key)
+            self.stats["offline_requests"] += 1
+            return translation
+
+        if not self.model:
+            self.logger.debug("No online model configured; returning original text.")
+            return text
 
         for attempt in range(max_retries + 1):
             try:
@@ -255,9 +566,9 @@ Glossary for consistent terminology:
     # ------------------------------------------------------
     # Auto translation for PO entry
     # ------------------------------------------------------
-    def auto_translate_entry(self, entry, module=None):
+    def auto_translate_entry(self, entry, module=None, force=False):
         """Auto-translate PO entry intelligently"""
-        if not self.model or not entry.msgid:
+        if not entry.msgid:
             return False
 
         msgid = entry.msgid.strip()
@@ -265,11 +576,11 @@ Glossary for consistent terminology:
             return False
 
         # Skip if already translated
-        if entry.msgstr and entry.msgid != entry.msgstr:
+        if entry.msgstr and entry.msgid != entry.msgstr and not force:
             return False
 
         # Skip if text already French and target is French
-        if is_french_text(msgid) and self.target_lang == "fr":
+        if not force and is_french_text(msgid) and self.target_lang == "fr":
             self.logger.debug(f"Already French, skipping: {msgid[:40]}...")
             return False
 
@@ -279,8 +590,16 @@ Glossary for consistent terminology:
         # Auto-detection logic
         if self.auto_detect and detected_lang:
             if detected_lang == self.target_lang:
-                self.logger.info(f"Detected {detected_lang} same as target, skipping: {msgid[:40]}")
-                return False
+                if force:
+                    self.logger.warning(
+                        "Detected %s which matches target %s; proceeding due to override for: %s",
+                        detected_lang,
+                        self.target_lang,
+                        msgid[:40],
+                    )
+                else:
+                    self.logger.info(f"Detected {detected_lang} same as target, skipping: {msgid[:40]}")
+                    return False
             elif detected_lang != self.source_lang:
                 self.logger.warning(
                     f"Detected {detected_lang}, translating → {self.target_lang}: {msgid[:40]}..."
@@ -298,12 +617,12 @@ Glossary for consistent terminology:
     # ------------------------------------------------------
     # Batch processing
     # ------------------------------------------------------
-    def batch_translate(self, entries, module=None, progress_callback=None):
+    def batch_translate(self, entries, module=None, progress_callback=None, force=False):
         """Translate multiple entries with stats"""
         results = {"total": len(entries), "translated": 0, "skipped": 0, "failed": 0}
         for i, entry in enumerate(entries):
             try:
-                if self.auto_translate_entry(entry, module):
+                if self.auto_translate_entry(entry, module, force=force):
                     results["translated"] += 1
                 else:
                     results["skipped"] += 1
