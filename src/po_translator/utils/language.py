@@ -75,6 +75,9 @@ def _detect_with_langid(text: str) -> Tuple[Optional[str], float]:
         normalized = "fr"
         confidence = max(confidence, 0.8)
 
+    if normalized not in RELATED_LANGUAGES:
+        return normalized, float(confidence)
+
     return normalized, float(confidence)
 
 
@@ -284,9 +287,6 @@ RELATED_LANGUAGES = PRIMARY_LANGUAGES + [
     "fi",  # Finnish
     "gl",  # Galician
 ]
-
-_LANGID_IDENTIFIER = LanguageIdentifier.from_modelstring(model, norm_probs=True)
-_LANGID_IDENTIFIER.set_languages(RELATED_LANGUAGES)
 
 _LANGID_IDENTIFIER = LanguageIdentifier.from_modelstring(model, norm_probs=True)
 _LANGID_IDENTIFIER.set_languages(RELATED_LANGUAGES)

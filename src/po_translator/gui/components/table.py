@@ -242,10 +242,7 @@ class TranslationTable:
             end = total_entries
 
         if total_entries and start >= total_entries:
-            if self.page_size > 0:
-                start = max(0, (self.total_pages - 1) * self.page_size)
-            else:
-                start = 0
+            start = max(0, (self.total_pages - 1) * (self.page_size or total_entries))
             end = total_entries
 
         self.visible_entries = entries[start:end]
@@ -479,7 +476,7 @@ class TranslationTable:
             self.clear_selection_button.configure(state=state)
 
     def update_header_checkbox(self):
-        """Synchronize the header checkbox with the selection state."""
+        """Synchronise the header checkbox with the selection state."""
 
         if self._updating_header:
             return
