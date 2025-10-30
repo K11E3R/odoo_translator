@@ -7,8 +7,8 @@ applied to the latest published minor release only.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.1.x   | ✅ Full support    |
-| < 1.1   | ❌ Unsupported     |
+| 1.0.x   | ✅ Full support    |
+| < 1.0   | ❌ Unsupported     |
 
 ## Reporting a Vulnerability
 
