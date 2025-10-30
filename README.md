@@ -120,6 +120,7 @@ translator_odoo/
 - **langdetect fallback** for longer texts
 - **Confidence mapping** to handle misdetections
 - **French/English indicators** for Odoo-specific terms
+- **Optional Google-backed detection** (set `PO_TRANSLATOR_USE_GOOGLE_DETECTION=0` to keep detection fully offline)
 
 ### GUI (`src/po_translator/gui/`)
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from functools import lru_cache
 from typing import Optional, Tuple
@@ -11,11 +12,11 @@ from langid.langid import LanguageIdentifier, model
 
 try:
     from googletrans import Translator as GoogleTranslator  # type: ignore
-
-    _GOOGLE_TRANSLATOR: Optional[GoogleTranslator]
-    _GOOGLE_TRANSLATOR = GoogleTranslator()
 except Exception:  # pragma: no cover - optional dependency/network issues
-    _GOOGLE_TRANSLATOR = None
+    GoogleTranslator = None  # type: ignore
+
+_GOOGLE_TRANSLATOR_SINGLETON: Optional[GoogleTranslator] = None
+_GOOGLE_TRANSLATOR_DISABLED = False
 
 LOGGER = logging.getLogger(__name__)
 
@@ -81,16 +82,67 @@ def _detect_with_langid(text: str) -> Tuple[Optional[str], float]:
     return normalized, float(confidence)
 
 
+def _is_google_detection_enabled() -> bool:
+    """Return True when Google-backed detection is allowed."""
+
+    global _GOOGLE_TRANSLATOR_DISABLED
+
+    if _GOOGLE_TRANSLATOR_DISABLED:
+        return False
+
+    toggle = os.environ.get("PO_TRANSLATOR_USE_GOOGLE_DETECTION", "1").strip().lower()
+    if toggle in {"0", "false", "off"}:
+        _GOOGLE_TRANSLATOR_DISABLED = True
+        return False
+
+    if GoogleTranslator is None:
+        _GOOGLE_TRANSLATOR_DISABLED = True
+        return False
+
+    return True
+
+
+def _get_google_translator() -> Optional[GoogleTranslator]:  # pragma: no cover - thin wrapper
+    """Lazy-load Google Translate client when enabled."""
+
+    global _GOOGLE_TRANSLATOR_SINGLETON
+
+    if not _is_google_detection_enabled():
+        return None
+
+    if _GOOGLE_TRANSLATOR_SINGLETON is None:
+        try:
+            _GOOGLE_TRANSLATOR_SINGLETON = GoogleTranslator()
+        except Exception as exc:  # pragma: no cover - network/initialisation
+            LOGGER.debug("Failed to initialise googletrans: %s", exc)
+            _GOOGLE_TRANSLATOR_SINGLETON = None
+            _disable_google_detection()
+            return None
+
+    return _GOOGLE_TRANSLATOR_SINGLETON
+
+
+def _disable_google_detection():
+    """Disable Google detection for the remainder of the process."""
+
+    global _GOOGLE_TRANSLATOR_DISABLED, _GOOGLE_TRANSLATOR_SINGLETON
+    _GOOGLE_TRANSLATOR_DISABLED = True
+    _GOOGLE_TRANSLATOR_SINGLETON = None
+
+
 @lru_cache(maxsize=2048)
 def _detect_with_google(text: str) -> Tuple[Optional[str], float]:
     """Detect language using Google Translate with caching."""
-    if not text or not text.strip() or not _GOOGLE_TRANSLATOR:
+    translator = _get_google_translator()
+
+    if not text or not text.strip() or not translator:
         return None, 0.0
 
     try:
-        detection = _GOOGLE_TRANSLATOR.detect(text)
+        detection = translator.detect(text)
     except Exception as exc:  # pragma: no cover - network variability
         LOGGER.debug("Google detection failed: %s", exc)
+        _disable_google_detection()
         return None, 0.0
 
     if not detection:
