@@ -236,6 +236,30 @@ Or via GUI: Statistics → Clear Cache
 - `po_translator.log` - Translation logs
 - Level: `DEBUG` (configurable in `utils/logger.py`)
 
+### Environment Variables
+
+#### `PO_TRANSLATOR_USE_GOOGLE_DETECTION`
+Controls whether Google Translate is used as a fallback for language detection.
+
+- **Default**: `1` (enabled)
+- **Disable**: Set to `0`, `false`, or `off` to use only offline detection (langid + langdetect)
+- **Example**:
+  ```bash
+  # Linux/Mac
+  export PO_TRANSLATOR_USE_GOOGLE_DETECTION=0
+  python app.py
+  
+  # Windows (Command Prompt)
+  set PO_TRANSLATOR_USE_GOOGLE_DETECTION=0
+  python app.py
+  
+  # Windows (PowerShell)
+  $env:PO_TRANSLATOR_USE_GOOGLE_DETECTION="0"
+  python app.py
+  ```
+
+**Note**: Disabling Google detection keeps language detection fully offline, which may reduce accuracy for some edge cases but eliminates external network calls.
+
 ## 🔍 How It Works
 
 ### Translation Flow
