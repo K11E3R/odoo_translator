@@ -115,7 +115,6 @@ def _get_google_translator() -> Optional[GoogleTranslator]:  # pragma: no cover 
             _GOOGLE_TRANSLATOR_SINGLETON = GoogleTranslator()
         except Exception as exc:  # pragma: no cover - network/initialisation
             LOGGER.debug("Failed to initialise googletrans: %s", exc)
-            _GOOGLE_TRANSLATOR_SINGLETON = None
             _disable_google_detection()
             return None
 
