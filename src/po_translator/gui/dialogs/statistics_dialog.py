@@ -67,6 +67,7 @@ class StatisticsDialog:
             ]),
             ("Translation Performance", [
                 ("Total Requests", str(stats['total_requests'])),
+                ("Offline Requests", str(stats['offline_requests'])),
                 ("API Calls", str(stats['api_calls'])),
                 ("Cache Hits", str(stats['cache_hits'])),
                 ("Cache Hit Rate", stats['cache_hit_rate']),

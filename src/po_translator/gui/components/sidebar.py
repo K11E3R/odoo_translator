@@ -23,6 +23,8 @@ class Sidebar:
         self.translation_enabled = False
         self.has_selection = False
         self.btn_delete = None
+        self.btn_save_api = None
+        self._offline_callback = None
 
         # Scrollable sidebar frame
         self.frame = ctk.CTkScrollableFrame(
@@ -118,8 +120,8 @@ class Sidebar:
             placeholder_text_color=THEME.TEXT_PLACEHOLDER
         )
         self.api_key_entry.grid(row=7, column=0, padx=20, pady=(0, 8), sticky="ew")
-        
-        self.create_button(
+
+        self.btn_save_api = self.create_button(
             "🔑  Save API Key",
             self.callbacks['save_api_key'],
             8,
@@ -193,7 +195,27 @@ class Sidebar:
             text_color=THEME.TEXT_MUTED
         )
         self.auto_detect_check.grid(row=10, column=0, padx=20, pady=(0, 8), sticky="w")
-        
+
+        self.offline_var = ctk.BooleanVar(value=False)
+        self._offline_callback = lambda: self._notify('offline_mode_changed', self.offline_var.get())
+        self.offline_switch = ctk.CTkSwitch(
+            self.frame,
+            text="Offline mode (no API)",
+            variable=self.offline_var,
+            command=self._offline_callback,
+            font=THEME.font(size=11),
+            text_color=THEME.TEXT_MUTED,
+        )
+        self.offline_switch.grid(row=11, column=0, padx=20, pady=(0, 8), sticky="w")
+
+        ctk.CTkLabel(
+            self.frame,
+            text="Uses local glossary heuristics when enabled.",
+            font=THEME.font(size=10),
+            text_color=THEME.TEXT_PLACEHOLDER,
+            anchor="w"
+        ).grid(row=12, column=0, padx=24, pady=(0, 4), sticky="w")
+
         self.btn_translate = ctk.CTkButton(
             self.frame,
             text="🌐  Translate All",
@@ -205,8 +227,8 @@ class Sidebar:
             corner_radius=8,
             state="disabled"
         )
-        self.btn_translate.grid(row=11, column=0, padx=20, pady=(15, 8), sticky="ew")
-        
+        self.btn_translate.grid(row=13, column=0, padx=20, pady=(15, 8), sticky="ew")
+
         self.btn_translate_selected = ctk.CTkButton(
             self.frame,
             text="✓  Translate Selected",
@@ -218,14 +240,14 @@ class Sidebar:
             corner_radius=8,
             state="disabled"
         )
-        self.btn_translate_selected.grid(row=12, column=0, padx=20, pady=(0, 0), sticky="ew")
+        self.btn_translate_selected.grid(row=14, column=0, padx=20, pady=(0, 0), sticky="ew")
     
     def create_actions_section(self):
         """Create actions section"""
-        self.create_section_label("ACTIONS", 13)
-        
+        self.create_section_label("ACTIONS", 15)
+
         actions_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
-        actions_frame.grid(row=14, column=0, padx=20, pady=(0, 8), sticky="ew")
+        actions_frame.grid(row=16, column=0, padx=20, pady=(0, 8), sticky="ew")
         actions_frame.grid_columnconfigure(0, weight=1)
         actions_frame.grid_columnconfigure(1, weight=1)
         
@@ -276,10 +298,10 @@ class Sidebar:
     
     def create_stats_section(self):
         """Create statistics section"""
-        self.create_section_label("STATISTICS", 16)
-        
+        self.create_section_label("STATISTICS", 17)
+
         stats_frame = ctk.CTkFrame(self.frame, fg_color=THEME.SURFACE_ALT, corner_radius=12)
-        stats_frame.grid(row=17, column=0, padx=20, pady=(0, 10), sticky="ew")
+        stats_frame.grid(row=18, column=0, padx=20, pady=(0, 10), sticky="ew")
 
         self.lbl_total = self.create_stat_label(stats_frame, "Total Entries", "0", 0)
         self.lbl_translated = self.create_stat_label(stats_frame, "✅ Translated", "0", 1, THEME.ACCENT_SUCCESS)
@@ -289,7 +311,7 @@ class Sidebar:
     def create_footer(self):
         """Create footer"""
         footer = ctk.CTkFrame(self.frame, fg_color="transparent")
-        footer.grid(row=18, column=0, padx=20, pady=20, sticky="s")
+        footer.grid(row=19, column=0, padx=20, pady=20, sticky="s")
         
         ctk.CTkLabel(
             footer,
@@ -416,7 +438,12 @@ class Sidebar:
         selected_state = "normal" if self.translation_enabled and self.has_selection else "disabled"
         self.btn_translate.configure(state=translate_state)
         self.btn_translate_selected.configure(state=selected_state)
-    
+
+    def _notify(self, key, *args):
+        callback = self.callbacks.get(key)
+        if callback:
+            callback(*args)
+
     def get_language_settings(self):
         """Get current language settings"""
         lang_map = {
@@ -432,6 +459,20 @@ class Sidebar:
         return {
             'source': lang_map.get(self.source_lang_var.get(), 'en'),
             'target': lang_map.get(self.target_lang_var.get(), 'fr'),
-            'auto_detect': self.auto_detect_var.get()
+            'auto_detect': self.auto_detect_var.get(),
+            'offline': self.offline_var.get(),
         }
+
+    def set_offline_mode(self, offline: bool):
+        if bool(self.offline_var.get()) != bool(offline):
+            if self.offline_switch and self._offline_callback:
+                self.offline_switch.configure(command=None)
+            self.offline_var.set(bool(offline))
+            if self.offline_switch and self._offline_callback:
+                self.offline_switch.configure(command=self._offline_callback)
+        entry_state = "disabled" if offline else "normal"
+        self.api_key_entry.configure(state=entry_state)
+        if self.btn_save_api:
+            self.btn_save_api.configure(state="disabled" if offline else "normal")
+        self._update_translation_buttons()
 

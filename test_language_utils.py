@@ -56,9 +56,11 @@ class LanguageDetectionTestCase(unittest.TestCase):
         )
         self.env_patcher.start()
 
+        language._GOOGLE_TRANSLATOR_SINGLETON = None
+        language._GOOGLE_TRANSLATOR_DISABLED = False
         language._disable_google_detection()
 
-        # Clear caches between tests to ensure deterministic behavior.
+        # Clear caches between tests to ensure deterministic behaviour.
         language._detect_with_langid.cache_clear()
         language._detect_with_google.cache_clear()
 

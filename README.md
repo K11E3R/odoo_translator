@@ -1,6 +1,6 @@
 # 🌐 Odoo PO Translator
 
-Fast, AI-powered translation tool for Odoo `.po` files using Google Gemini 2.5 Flash-Lite.
+Fast, AI-powered translation tool for Odoo `.po` files using Google Gemini 2.5 Flash-Lite with an optional offline glossary engine.
 
 ```bash
 # 1. Install dependencies
@@ -13,8 +13,8 @@ python app.py
 ## 📋 Requirements
 
 - **Python 3.11+**
-- **Gemini API Key** (free at https://aistudio.google.com/app/apikey)
-- **Dependencies**: `polib`, `langdetect`, `customtkinter`, `google-generativeai`
+- **Gemini API Key** (free at https://aistudio.google.com/app/apikey) — optional when using offline mode
+- **Dependencies**: `polib`, `langdetect`, `langid`, `customtkinter`, `google-generativeai`, `googletrans`
 
 ## 🎯 Usage
 
@@ -36,6 +36,8 @@ python app.py
 ### 4. Translate
 - Click "🌐 Translate All" to translate all untranslated entries
 - Or select specific entries and click "✓ Translate Selected"
+- Enable **Offline mode** in the sidebar to use the local glossary translator instead of Gemini
+- Prefer the `po-translator` CLI for automated builds and CI pipelines (see [Command Line Usage](#-command-line-usage-srcpo_translatorclipy))
 
 ### 5. Export
 - Click "💾 Save File" to export translated `.po` file
@@ -122,6 +124,76 @@ translator_odoo/
 - **French/English indicators** for Odoo-specific terms
 - **Optional Google-backed detection** (set `PO_TRANSLATOR_USE_GOOGLE_DETECTION=0` to keep detection fully offline)
 
+### Offline Glossary Translator (`src/po_translator/translator.py`)
+
+- Local heuristic engine for common ERP phrases (English ↔ French, English ↔ Spanish)
+- Preserves placeholders and punctuation automatically
+- Caches results alongside online translations
+- Toggle via the **Offline mode** switch in the UI or `PO_TRANSLATOR_OFFLINE_MODE=1`
+
+### 🔌 Command Line Usage (`src/po_translator/cli.py`)
+
+Use the bundled CLI when you need unattended translations:
+
+```bash
+# Translate a PO file offline and overwrite it in place
+po-translator translate --source fr --target en --offline --in-place test_files/test_fr_en.po
+
+# Keep the original file intact and write to ./build with a suffix
+po-translator translate test.po --output-dir build --suffix .en --target en
+
+# Force retranslation using Gemini if an API key is available
+GEMINI_API_KEY=... po-translator translate module.po --source en --target fr
+```
+
+The CLI mirrors the GUI rules (language detection, glossary handling, cache
+reuse). Use `--dry-run` to validate files without touching disk and
+`--include-obsolete` when auditing archived entries.
+
+## 🛠️ Modes & Workflow
+
+```mermaid
+flowchart TD
+    Start((Launch App)) --> Mode{Offline mode?}
+    Mode -->|Yes| Offline[Local glossary translator]
+    Mode -->|No| Online[Gemini 2.5 Flash-Lite]
+    Offline --> Import[Import / merge PO files]
+    Online --> Import
+    Import --> Analyse[Language analysis & validation]
+    Analyse --> Choice{Translate scope}
+    Choice -->|All entries| TranslateAll[Translate All]
+    Choice -->|Selected rows| TranslateSome[Translate Selected]
+    TranslateAll --> Review[Review table & pagination]
+    TranslateSome --> Review
+    Review --> Export[Export or save]
+    Export --> Finish((Complete))
+```
+
+## 📴 Offline Mode
+
+- Toggle directly from the sidebar ("Offline mode (no API)") or set `PO_TRANSLATOR_OFFLINE_MODE=1` before launching the app.
+- Works entirely without network access using curated Odoo terminology for English↔French and English↔Spanish flows.
+- Offline translations participate in caching, statistics, selection workflows, and validation prompts.
+- Supply a Gemini API key and disable offline mode to switch back to high-fidelity online translations.
+
+### 🔐 Security & Compliance
+
+- Store API keys in environment variables or your CI secret manager. The CLI
+  accepts `--api-key`, but environment variables keep scripts key-free.
+- Set `PO_TRANSLATOR_USE_GOOGLE_DETECTION=0` and enable offline mode for fully
+  air-gapped usage.
+- Review [SECURITY.md](SECURITY.md) for supported versions, reporting guidance,
+  and privacy recommendations.
+
+### 📦 Releases & Automation
+
+- The project follows semantic versioning—see [CHANGELOG.md](CHANGELOG.md) for
+  release notes.
+- Install via `pip install .` or `pip install -e .` to obtain the
+  `po-translator` entry point.
+- Add `python -m unittest` to CI (after setting
+  `PO_TRANSLATOR_OFFLINE_MODE=1`) to keep regressions covered.
+
 ### GUI (`src/po_translator/gui/`)
 
 - **Modular architecture** - Each component is independent
@@ -198,6 +270,29 @@ sudo apt install python3-tk
 ## 🧪 Testing
 
 ### Debug Translation
+
+## ⚖️ Project Review
+
+**Pros**
+
+- End-to-end `.po` workflow with import/merge, validation, translation, and export tightly integrated in the desktop UI.
+- Robust language detection stack with offline heuristics, langid, and optional Google support for tricky entries.
+- Offline glossary translator ensures mission-critical translations continue even when Gemini is unavailable.
+- Rich GUI experience with pagination, theming, undo/redo, mismatch prompts, and translation statistics.
+
+**Cons / Risks**
+
+- Gemini dependency still underpins high-quality translations; changes in API availability or pricing can impact online mode.
+- Offline translator currently focuses on English↔French and English↔Spanish phrases; other language pairs fall back to pass-through behaviour.
+- Desktop-focused CustomTkinter UI may need adaptation for headless or server-based Odoo automation scenarios.
+- Sensitive `.po` strings should be vetted before online translation to avoid leaking confidential ERP data.
+
+**Suggested Improvements**
+
+- Expand offline dictionaries and allow user-managed glossaries per project or module.
+- Provide packaged releases (versioned builds, changelog) and automated CI covering multiple Python/Odoo environments.
+- Add API quota monitoring and key management helpers (e.g., masked storage, rotation reminders).
+- Offer optional human-in-the-loop review workflow (comments, approvals) to improve translation quality for domain-specific terms.
 ```bash
 python test_translation_debug.py
 ```
