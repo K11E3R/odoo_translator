@@ -1,6 +1,5 @@
-import unittest
 from types import SimpleNamespace
-from unittest import mock
+from unittest import TestCase, mock, main
 
 import os
 import sys
@@ -46,7 +45,7 @@ if 'langid.langid' not in sys.modules:
 from po_translator.utils import language
 
 
-class LanguageDetectionTestCase(unittest.TestCase):
+class LanguageDetectionTestCase(TestCase):
     """Test suite covering language detection heuristics and helpers."""
 
     def setUp(self):
@@ -205,4 +204,4 @@ class LanguageDetectionTestCase(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    main()
