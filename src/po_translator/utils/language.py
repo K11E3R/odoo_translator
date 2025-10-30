@@ -96,7 +96,6 @@ def _is_google_detection_enabled() -> bool:
         return False
 
     if GoogleTranslator is None:
-        _GOOGLE_TRANSLATOR_DISABLED = True
         return False
 
     return True
