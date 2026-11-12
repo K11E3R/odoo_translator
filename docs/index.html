@@ -627,7 +627,7 @@
           ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.',17.5,21,20.4]
         ];
         $('#steps').innerHTML=steps.map(function(s,i){
-          return '<div class="step rv" style="transition-delay:'+(i*90)+'ms"><div class="step__shot" data-s="'+s[2]+'" data-e="'+s[3]+'" data-p="'+s[4]+'"><video muted playsinline preload="metadata" aria-hidden="true" src="screenshots/odoo_translator_import_flow.mp4#t='+s[4]+'"></video><span class="live">Preview</span></div><div class="step__in"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p><button class="watch" type="button" data-t="'+s[2]+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>Watch this step · '+fmt(s[2])+'</button></div></div>';
+          return '<div class="step rv" style="transition-delay:'+(i*90)+'ms"><div class="step__shot" data-s="'+s[2]+'" data-e="'+s[3]+'" data-p="'+s[4]+'"><video muted playsinline preload="none" aria-hidden="true" poster="screenshots/step-'+(i+1)+'.jpg" src="screenshots/odoo_translator_import_flow.mp4"></video><span class="live">Preview</span></div><div class="step__in"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p><button class="watch" type="button" data-t="'+s[2]+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>Watch this step · '+fmt(s[2])+'</button></div></div>';
         }).join('');
         $('#steps').addEventListener('click',function(e){var w=e.target.closest('.watch');if(w)goTutorial(+w.dataset.t)});
         /* hover a step: loop its segment of the tutorial */
@@ -635,8 +635,8 @@
           var sv=$('video',sh),s0=+sh.dataset.s,s1=+sh.dataset.e,ps=+sh.dataset.p;
           sv.addEventListener('timeupdate',function(){if(sv.currentTime>=s1-.1)sv.currentTime=s0});
           var card=sh.closest('.step');
-          card.addEventListener('pointerenter',function(){if(still)return;sv.currentTime=s0;var p=sv.play();if(p&&p.catch)p.catch(function(){})});
-          card.addEventListener('pointerleave',function(){sv.pause();sv.currentTime=ps});
+          card.addEventListener('pointerenter',function(){if(still)return;sv.preload='auto';sv.currentTime=s0;var p=sv.play();if(p&&p.catch)p.catch(function(){})});
+          card.addEventListener('pointerleave',function(){sv.pause();try{sv.currentTime=ps}catch(e){}});
         });
 
         /* ---------- faq ---------- */
