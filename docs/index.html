@@ -12,29 +12,35 @@
     <meta property="og:title" content="PO Translator — AI translation for Odoo .po files" />
     <meta property="og:description" content="Translate hundreds of Odoo .po entries in minutes. Online with Gemini AI or fully offline. Free and open source." />
     <meta property="og:url" content="https://k11e3r.github.io/odoo_translator/" />
+    <meta property="og:image" content="https://k11e3r.github.io/odoo_translator/screenshots/main-interface.png" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6b5b'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%23f6f5f1' font-family='Georgia,serif'%3EP%3C/text%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <link rel="preload" as="image" href="screenshots/main-interface.png" />
     <style>
       *{box-sizing:border-box;margin:0;padding:0}
       :root{
         --paper:#f6f5f1; --paper-2:#efece4; --ink:#1c2623; --ink-soft:#4b544f; --ink-dim:#6b736d;
-        --line:#e4e0d5; --line-soft:#ece8dd; --sage:#3d6b5b; --sage-deep:#2c5245; --sage-tint:#eaf0ec;
-        --card:#fffdf8; --radius:18px; --wrap:1080px;
+        --line:#e4e0d5; --line-soft:#ece8dd; --sage:#3d6b5b; --sage-deep:#2c5245; --sage-tint:#eaf0ec; --mint:#7fe0b8;
+        --card:#fffdf8; --radius:18px; --wrap:1120px;
         --serif:'Instrument Serif',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+        --ease:cubic-bezier(.2,.7,.2,1);
       }
       html{scroll-behavior:smooth}
-      body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+      body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
       ::selection{background:var(--sage);color:var(--paper)}
       a{color:inherit;text-decoration:none}
+      button{font:inherit;color:inherit}
+      code{font-family:var(--mono);font-size:.88em}
       .wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:1.5rem}
       em{font-family:var(--serif);font-style:italic;color:var(--sage)}
       .eyebrow{font:500 .75rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--sage-deep);display:inline-flex;align-items:center;gap:.55rem}
       .dot{width:7px;height:7px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 4px var(--sage-tint)}
+      :focus-visible{outline:2px solid var(--sage);outline-offset:3px;border-radius:6px}
 
       /* nav */
-      .top{position:sticky;top:0;z-index:50;background:rgba(246,245,241,.82);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s}
+      .top{position:sticky;top:0;z-index:50;background:rgba(246,245,241,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s}
       .top.stuck{border-color:var(--line);background:rgba(246,245,241,.94)}
       .top__in{display:flex;align-items:center;justify-content:space-between;height:66px}
       .brand{display:flex;align-items:center;gap:.6rem;font-weight:600;letter-spacing:-.01em}
@@ -42,60 +48,156 @@
       .nav{display:flex;align-items:center;gap:1.6rem}
       .nav a{color:var(--ink-soft);font-size:.92rem;font-weight:500;transition:color .18s}
       .nav a:hover{color:var(--ink)}
-      .burger{display:none;background:none;border:0;cursor:pointer;width:40px;height:40px}
-      .burger span,.burger span::before,.burger span::after{content:"";display:block;width:20px;height:1.5px;background:var(--ink);position:relative;transition:.2s}
+      .nav a.btn--primary{color:var(--paper)}
+      .burger{display:none;background:none;border:0;cursor:pointer;width:40px;height:40px;place-items:center}
+      .burger span,.burger span::before,.burger span::after{content:"";display:block;width:20px;height:1.5px;background:var(--ink);position:relative}
       .burger span::before{position:absolute;top:-6px}.burger span::after{position:absolute;top:6px}
 
-      .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;font-weight:600;font-size:.92rem;padding:.72rem 1.3rem;border:1px solid transparent;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s,border-color .18s;white-space:nowrap}
-      .btn svg{width:17px;height:17px}
+      .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;font-weight:600;font-size:.92rem;padding:.72rem 1.3rem;border:1px solid transparent;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s,border-color .18s,color .18s;white-space:nowrap}
+      .btn svg{width:17px;height:17px;flex:none}
       .btn--primary{background:var(--sage);color:var(--paper);box-shadow:0 10px 26px -14px rgba(44,82,69,.9)}
       .btn--primary:hover{background:var(--sage-deep);transform:translateY(-2px)}
       .btn--ghost{background:transparent;color:var(--ink);border-color:var(--line)}
       .btn--ghost:hover{border-color:var(--sage);color:var(--sage-deep);transform:translateY(-2px)}
       .btn--sm{padding:.5rem 1rem;font-size:.86rem}
 
+      /* window frame (shared by all screenshots + video) */
+      .win{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+        box-shadow:0 1px 0 rgba(255,255,255,.8) inset,0 2px 4px rgba(28,38,35,.04),0 24px 48px -20px rgba(28,38,35,.28),0 60px 120px -40px rgba(28,38,35,.30)}
+      .win__bar{display:flex;align-items:center;gap:.45rem;height:34px;padding:0 .9rem;border-bottom:1px solid var(--line-soft);background:linear-gradient(#fffdf8,#f8f6f0)}
+      .win__bar i{width:10px;height:10px;border-radius:50%;background:#e2ddd1;display:block}
+      .win__bar span{margin-left:.6rem;font:500 .7rem/1 var(--mono);color:var(--ink-dim);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .win__body{position:relative;background:#0f1722;line-height:0}
+      .win__body img,.win__body video{display:block;width:100%;height:auto}
+
       /* hero */
-      .hero{padding:5.5rem 0 4rem;text-align:center;position:relative;overflow:hidden}
-      .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 50% -10%,var(--sage-tint),transparent 70%);pointer-events:none}
-      .hero__in{position:relative;max-width:760px;margin-inline:auto}
+      .hero{padding:5rem 0 2rem;text-align:center;position:relative}
+      .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(640px 320px at 50% -10%,var(--sage-tint),transparent 70%);pointer-events:none}
+      .hero__in{position:relative;max-width:780px;margin-inline:auto}
       .hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1.04;letter-spacing:-.01em;margin:1.3rem 0}
       .hero .lead{color:var(--ink-soft);font-size:clamp(1.05rem,2.1vw,1.2rem);max-width:56ch;margin:0 auto 2rem}
       .hero__cta{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
-      .hero__meta{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2.2rem;color:var(--ink-dim);font:500 .8rem/1 var(--mono);letter-spacing:.04em}
-      .hero__meta span{display:inline-flex;align-items:center;gap:.45rem}
+      .hero__meta{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;color:var(--ink-dim);font:500 .8rem/1 var(--mono);letter-spacing:.04em}
       .hero__meta b{color:var(--sage-deep);font-weight:600}
 
+      /* 3D hero stack */
+      .stage{perspective:2200px;perspective-origin:50% 0%;margin:3.5rem auto 0;max-width:980px;padding:0 1.5rem;position:relative}
+      .stack{position:relative;aspect-ratio:1.34;transform-style:preserve-3d;
+        transform:rotateX(calc(var(--tilt,1)*20deg + var(--my,0)*-4deg)) rotateY(calc(var(--mx,0)*6deg)) translateZ(calc(var(--tilt,1)*-60px));
+        transition:transform .6s var(--ease);will-change:transform}
+      .stack .win{position:absolute;width:78%;transition:transform .9s var(--ease),opacity .9s var(--ease)}
+      .stack .win.back{left:0;top:0;transform:translateZ(-140px) translate3d(-2%,-4%,0) rotateZ(-2.5deg);opacity:.92}
+      .stack .win.front{right:0;top:9%;transform:translateZ(40px)}
+      .stack:hover .win.back{transform:translateZ(-180px) translate3d(-6%,-7%,0) rotateZ(-4deg)}
+      .stack:hover .win.front{transform:translateZ(80px) translate3d(2%,2%,0)}
+      .stage .play-chip{position:absolute;z-index:3;left:50%;bottom:6%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:.6rem;background:rgba(28,38,35,.86);color:var(--paper);backdrop-filter:blur(8px);border-radius:999px;padding:.6rem 1.1rem .6rem .6rem;font-weight:600;font-size:.9rem;box-shadow:0 16px 30px -14px rgba(0,0,0,.6);transition:transform .2s,background .2s}
+      .stage .play-chip:hover{transform:translateX(-50%) translateY(-2px);background:var(--ink)}
+      .play-chip b{width:30px;height:30px;border-radius:50%;background:var(--mint);color:#0d1713;display:grid;place-items:center}
+      .play-chip b svg{width:13px;height:13px;margin-left:2px}
+      .intro .stack{animation:rise 1.4s var(--ease) backwards}
+      @keyframes rise{from{opacity:0;transform:rotateX(38deg) translateY(80px) translateZ(-200px)}}
+
       /* sections */
-      section{padding:4.5rem 0}
-      .sec-head{max-width:620px;margin:0 auto 3rem;text-align:center}
+      section{padding:5rem 0}
+      .sec-head{max-width:640px;margin:0 auto 3rem;text-align:center}
       .sec-head h2{font-family:var(--serif);font-weight:400;font-size:clamp(2rem,4vw,3rem);line-height:1.1;margin:.8rem 0 .6rem}
       .sec-head p{color:var(--ink-soft)}
+      .alt{background:var(--paper-2)}
+
+      /* reveal (3D) */
+      .rv{opacity:0;transform:perspective(1200px) rotateX(10deg) translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+      .rv.in{opacity:1;transform:none}
+
+      /* tutorial player */
+      .player{display:grid;grid-template-columns:1.55fr 1fr;gap:2rem;align-items:start}
+      .p3d{perspective:1800px}
+      .p3d .win{transform:rotateX(calc(var(--pt,1)*14deg + var(--my,0)*-3deg)) rotateY(calc(var(--mx,0)*4deg));transform-origin:50% 100%;transition:transform .5s var(--ease)}
+      .vid-wrap{position:relative;cursor:pointer}
+      .vid-wrap video{aspect-ratio:4/3;object-fit:cover;background:#0f1722}
+      .big-play{position:absolute;inset:0;display:grid;place-items:center;background:radial-gradient(circle at center,rgba(15,23,34,.15),rgba(15,23,34,.45));transition:opacity .3s;border:0;cursor:pointer}
+      .big-play b{width:74px;height:74px;border-radius:50%;background:rgba(246,245,241,.95);display:grid;place-items:center;box-shadow:0 18px 40px -12px rgba(0,0,0,.55);transition:transform .25s var(--ease)}
+      .big-play:hover b{transform:scale(1.08)}
+      .big-play svg{width:26px;height:26px;color:var(--sage-deep);margin-left:4px}
+      .playing .big-play{opacity:0;pointer-events:none}
+      .ctrl{display:flex;align-items:center;gap:.8rem;padding:.75rem 1rem;background:var(--card);border-top:1px solid var(--line-soft);line-height:1}
+      .ctrl button{background:none;border:0;cursor:pointer;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--ink-soft);flex:none}
+      .ctrl button:hover{background:var(--sage-tint);color:var(--sage-deep)}
+      .ctrl svg{width:16px;height:16px}
+      .bar{position:relative;flex:1;height:6px;border-radius:99px;background:var(--line);cursor:pointer}
+      .bar__fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:99px;background:var(--sage)}
+      .bar__mk{position:absolute;top:50%;width:2px;height:12px;margin-top:-6px;background:var(--paper);border-radius:2px;box-shadow:0 0 0 1px var(--line)}
+      .time{font:500 .72rem/1 var(--mono);color:var(--ink-dim);min-width:72px;text-align:right}
+      .chapters{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+      .chapters button{width:100%;text-align:left;display:grid;grid-template-columns:auto 1fr;gap:.2rem 1rem;align-items:baseline;padding:.9rem 1.1rem;border-radius:14px;background:transparent;border:1px solid transparent;cursor:pointer;transition:background .25s,border-color .25s,transform .25s var(--ease)}
+      .chapters button:hover{background:var(--card);border-color:var(--line)}
+      .chapters .ts{font:500 .72rem/1 var(--mono);color:var(--ink-dim);grid-row:span 2;padding-top:.2rem}
+      .chapters strong{font-weight:600;font-size:.98rem}
+      .chapters small{grid-column:2;color:var(--ink-soft);font-size:.86rem;line-height:1.45}
+      .chapters .on{background:var(--card);border-color:var(--sage);transform:translateX(6px)}
+      .chapters .on .ts{color:var(--sage)}
+      .chapters .prog{grid-column:2;height:2px;background:var(--line);border-radius:2px;margin-top:.5rem;overflow:hidden;display:none}
+      .chapters .on .prog{display:block}
+      .chapters .prog i{display:block;height:100%;width:0;background:var(--sage)}
+
+      /* interface explorer */
+      .explorer{display:grid;grid-template-columns:1fr 340px;gap:2rem;align-items:start}
+      .ex3d{perspective:2000px}
+      .ex3d .win{transform:rotateX(calc(var(--my,0)*-3deg)) rotateY(calc(var(--mx,0)*4deg + var(--ry,0deg)));transition:transform .7s var(--ease)}
+      .ex-view{position:relative;overflow:hidden;aspect-ratio:1691/1361;background:#0f1722}
+      .ex-cam{position:absolute;inset:0;transform-origin:0 0;transition:transform .9s var(--ease);will-change:transform}
+      .ex-cam img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none}
+      .hs{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:6px;transition:box-shadow .5s var(--ease),background .3s}
+      .hs::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 0 rgba(127,224,184,.7);animation:ping 2.4s infinite;opacity:.95;transition:opacity .3s}
+      .hs:hover{background:rgba(127,224,184,.12);box-shadow:0 0 0 1.5px var(--mint) inset}
+      .hs.on{box-shadow:0 0 0 2px var(--mint) inset,0 0 0 9999px rgba(10,16,20,.58);background:transparent;z-index:2}
+      .hs.on::after,.focus .hs:not(.on)::after{opacity:0}
+      @keyframes ping{0%{box-shadow:0 0 0 0 rgba(127,224,184,.7)}70%{box-shadow:0 0 0 12px rgba(127,224,184,0)}100%{box-shadow:0 0 0 0 rgba(127,224,184,0)}}
+      .ex-tip{position:absolute;left:1rem;right:1rem;bottom:1rem;z-index:4;background:rgba(246,245,241,.97);border:1px solid var(--line);border-radius:14px;padding:1rem 1.15rem;box-shadow:0 20px 40px -18px rgba(0,0,0,.5);transform:translateY(130%);opacity:0;transition:transform .5s var(--ease),opacity .4s;line-height:1.5;max-width:460px}
+      .focus .ex-tip{transform:none;opacity:1}
+      .ex-tip .k{font:500 .68rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--sage)}
+      .ex-tip h3{font-size:1.05rem;margin:.35rem 0 .25rem}
+      .ex-tip p{color:var(--ink-soft);font-size:.9rem}
+      .ex-side{display:flex;flex-direction:column;gap:1.1rem}
+      .ex-tools{display:flex;gap:.6rem;flex-wrap:wrap}
+      .grp h4{font:500 .7rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:.6rem}
+      .chips{display:flex;flex-wrap:wrap;gap:.4rem}
+      .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:.38rem .8rem;font-size:.82rem;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:all .2s}
+      .chip:hover{border-color:var(--sage);color:var(--sage-deep)}
+      .chip.on{background:var(--sage);border-color:var(--sage);color:var(--paper)}
+      .ex-count{font:500 .75rem/1 var(--mono);color:var(--ink-dim)}
 
       /* features */
-      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
-      .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem;transition:transform .2s,border-color .2s,box-shadow .2s}
-      .card:hover{transform:translateY(-3px);border-color:var(--sage);box-shadow:0 18px 40px -28px rgba(28,38,35,.4)}
-      .card__ico{width:40px;height:40px;border-radius:11px;background:var(--sage-tint);color:var(--sage-deep);display:grid;place-items:center;margin-bottom:1rem}
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;perspective:1400px}
+      .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem;transform-style:preserve-3d;
+        transition:transform .35s var(--ease),border-color .2s,box-shadow .35s var(--ease)}
+      .card:hover{border-color:var(--sage);box-shadow:0 26px 40px -28px rgba(28,38,35,.45)}
+      .card__ico{width:40px;height:40px;border-radius:11px;background:var(--sage-tint);color:var(--sage-deep);display:grid;place-items:center;margin-bottom:1rem;transform:translateZ(24px)}
       .card__ico svg{width:20px;height:20px}
-      .card h3{font-size:1.08rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.4rem}
+      .card h3{font-size:1.08rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.4rem;transform:translateZ(14px)}
       .card p{color:var(--ink-soft);font-size:.92rem;line-height:1.55}
 
-      /* how it works */
+      /* steps */
       .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;counter-reset:s}
-      .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.8rem 1.5rem;position:relative}
-      .step__n{counter-increment:s;font-family:var(--serif);font-size:2.4rem;color:var(--sage);line-height:1;display:block;margin-bottom:.8rem}
+      .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+      .step__shot{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0f1722;border-bottom:1px solid var(--line-soft);perspective:800px}
+      .step__shot img{width:100%;height:100%;object-fit:cover;object-position:top left;transform:scale(1.04);transition:transform .8s var(--ease)}
+      .step:hover .step__shot img{transform:scale(1.12) rotateX(4deg)}
+      .step__in{padding:1.5rem}
+      .step__n{counter-increment:s;font-family:var(--serif);font-size:2.2rem;color:var(--sage);line-height:1;display:block;margin-bottom:.7rem}
       .step__n::before{content:"0" counter(s)}
       .step h3{font-size:1.1rem;font-weight:600;margin-bottom:.4rem}
       .step p{color:var(--ink-soft);font-size:.92rem}
-      .steps__line{display:none}
+      .watch{margin-top:1rem;display:inline-flex;align-items:center;gap:.45rem;font:500 .78rem/1 var(--mono);color:var(--sage-deep);background:var(--sage-tint);border:0;border-radius:999px;padding:.5rem .8rem;cursor:pointer;transition:background .2s}
+      .watch:hover{background:#dbe6df}
+      .watch svg{width:11px;height:11px}
 
       /* cta band */
       .band{background:var(--ink);color:var(--paper);border-radius:26px;padding:3.4rem 2rem;text-align:center;position:relative;overflow:hidden}
       .band::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 240px at 50% 120%,rgba(127,224,184,.14),transparent 70%)}
       .band h2{position:relative;font-family:var(--serif);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem);line-height:1.12;margin-bottom:.8rem}
       .band p{position:relative;color:#c9d2cc;max-width:48ch;margin:0 auto 1.8rem}
-      .band em{color:#7fe0b8}
-      .band .btn--primary{position:relative;background:#7fe0b8;color:#0d1713;box-shadow:none}
+      .band em{color:var(--mint)}
+      .band .btn--primary{position:relative;background:var(--mint);color:#0d1713;box-shadow:none}
       .band .btn--primary:hover{background:#9bead0}
 
       /* faq */
@@ -104,7 +206,7 @@
       details[open]{border-color:var(--sage)}
       summary{list-style:none;cursor:pointer;font-weight:600;font-size:1rem;padding:1.15rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem}
       summary::-webkit-details-marker{display:none}
-      summary .pm{flex:none;width:22px;height:22px;position:relative;transition:transform .2s;color:var(--sage)}
+      summary .pm{flex:none;width:22px;height:22px;position:relative;color:var(--sage)}
       summary .pm::before,summary .pm::after{content:"";position:absolute;background:currentColor;border-radius:2px}
       summary .pm::before{top:10px;left:4px;width:14px;height:2px}
       summary .pm::after{top:4px;left:10px;width:2px;height:14px;transition:opacity .2s}
@@ -118,18 +220,27 @@
       .foot nav a{color:var(--ink-soft);transition:color .18s}
       .foot nav a:hover{color:var(--sage-deep)}
 
-      @media(max-width:860px){
-        .grid,.steps{grid-template-columns:1fr 1fr}
+      @media(max-width:960px){
+        .player,.explorer{grid-template-columns:1fr}
+        .chapters{display:grid;grid-template-columns:1fr 1fr}
       }
+      @media(max-width:860px){.grid,.steps{grid-template-columns:1fr 1fr}}
       @media(max-width:620px){
-        .nav{position:fixed;inset:66px 0 auto;flex-direction:column;align-items:flex-start;gap:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.5rem 1.5rem;transform:translateY(-130%);transition:transform .25s;height:auto}
+        .nav{position:fixed;inset:66px 0 auto;flex-direction:column;align-items:flex-start;gap:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.5rem 1.5rem;transform:translateY(-130%);transition:transform .25s}
         .nav.open{transform:translateY(0)}
         .nav a{padding:.7rem 0;width:100%;border-bottom:1px solid var(--line-soft)}
-        .nav .btn{margin-top:.8rem}
-        .burger{display:block}
-        .grid,.steps{grid-template-columns:1fr}
+        .nav .btn{margin-top:.8rem;width:auto;border:0}
+        .burger{display:grid}
+        .grid,.steps,.chapters{grid-template-columns:1fr}
+        .stack .win{width:88%}
+        .stack{aspect-ratio:1.08}
+        .time{display:none}
       }
-      @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
+      @media(prefers-reduced-motion:reduce){
+        *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+        .rv{opacity:1;transform:none}
+        .stack,.p3d .win,.ex3d .win{transform:none!important}
+      }
     </style>
   </head>
   <body>
@@ -140,6 +251,8 @@
         </a>
         <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span></button>
         <nav class="nav" id="nav" aria-label="Main">
+          <a href="#tutorial">Tutorial</a>
+          <a href="#explore">Interface</a>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           <a href="#faq">FAQ</a>
@@ -150,7 +263,7 @@
     </header>
 
     <main>
-      <section class="hero">
+      <section class="hero intro">
         <div class="wrap hero__in">
           <p class="eyebrow"><span class="dot"></span>100% free &amp; open source</p>
           <h1>AI-powered translation <br />for <em>Odoo developers</em></h1>
@@ -160,7 +273,10 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
               Download v1.0 (EXE)
             </a>
-            <a class="btn btn--ghost" href="https://github.com/K11E3R/odoo_translator/releases/latest" target="_blank" rel="noopener">View releases</a>
+            <a class="btn btn--ghost" href="#tutorial">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
+              Watch the tutorial
+            </a>
           </div>
           <div class="hero__meta">
             <span><b>MIT</b> licensed</span>
@@ -168,11 +284,86 @@
             <span><b>Gemini AI</b> + offline</span>
           </div>
         </div>
+
+        <div class="stage" id="stage">
+          <div class="stack" id="stack">
+            <figure class="win back" aria-hidden="true">
+              <div class="win__bar"><i></i><i></i><i></i><span>Import .po files</span></div>
+              <div class="win__body"><img src="screenshots/import_po_file.png" alt="" width="1685" height="1366" loading="eager" /></div>
+            </figure>
+            <figure class="win front">
+              <div class="win__bar"><i></i><i></i><i></i><span>PO Translator — workspace</span></div>
+              <div class="win__body"><img src="screenshots/main-interface.png" alt="PO Translator main interface with sidebar actions and translation table" width="1691" height="1361" /></div>
+            </figure>
+          </div>
+          <a class="play-chip" href="#tutorial" data-play><b><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg></b>See it in action · 0:21</a>
+        </div>
+      </section>
+
+      <section id="tutorial">
+        <div class="wrap">
+          <div class="sec-head rv">
+            <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Tutorial</p>
+            <h2>A whole module, translated in <em>twenty seconds</em></h2>
+            <p>Watch the full flow, or jump straight to the step you need.</p>
+          </div>
+          <div class="player rv">
+            <div class="p3d" id="p3d">
+              <div class="win" id="vwin">
+                <div class="win__bar"><i></i><i></i><i></i><span>odoo_translator_import_flow.mp4</span></div>
+                <div class="win__body vid-wrap" id="vwrap">
+                  <video id="vid" muted playsinline preload="metadata" poster="screenshots/main-interface.png" aria-label="Tutorial: importing and translating Odoo .po files with PO Translator">
+                    <source src="screenshots/odoo_translator_import_flow.mp4" type="video/mp4" />
+                  </video>
+                  <button class="big-play" type="button" aria-label="Play tutorial"><b><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg></b></button>
+                </div>
+                <div class="ctrl">
+                  <button type="button" id="pp" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor" id="ppi"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg></button>
+                  <div class="bar" id="bar" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="21" aria-valuenow="0" tabindex="0"><div class="bar__fill" id="fill"></div></div>
+                  <span class="time" id="time">0:00 / 0:21</span>
+                  <button type="button" id="fs" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+                </div>
+              </div>
+            </div>
+            <ol class="chapters" id="chapters"></ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="explore" class="alt">
+        <div class="wrap">
+          <div class="sec-head rv">
+            <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Explore the interface</p>
+            <h2>Every control, <em>one click away</em></h2>
+            <p>Hover the glowing points, or pick a control on the right — the camera flies to it and explains what it does.</p>
+          </div>
+          <div class="explorer rv">
+            <div class="ex3d" id="ex3d">
+              <div class="win">
+                <div class="win__bar"><i></i><i></i><i></i><span>PO Translator — main interface</span></div>
+                <div class="ex-view" id="exview">
+                  <div class="ex-cam" id="excam">
+                    <img src="screenshots/main-interface.png" alt="PO Translator main interface" width="1691" height="1361" loading="lazy" />
+                  </div>
+                  <div class="ex-tip" id="extip" aria-live="polite"><div class="k" id="exk"></div><h3 id="ext"></h3><p id="exd"></p></div>
+                </div>
+              </div>
+            </div>
+            <aside class="ex-side">
+              <div class="ex-tools">
+                <button class="btn btn--primary btn--sm" type="button" id="tour"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg><span>Take the tour</span></button>
+                <button class="btn btn--ghost btn--sm" type="button" id="reset">Reset view</button>
+              </div>
+              <span class="ex-count" id="excount">19 controls</span>
+              <div id="groups"></div>
+            </aside>
+          </div>
+        </div>
       </section>
 
       <section id="features">
         <div class="wrap">
-          <div class="sec-head">
+          <div class="sec-head rv">
             <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Features</p>
             <h2>Powerful features for <em>professionals</em></h2>
             <p>Everything you need to localize an Odoo module quickly, accurately and without breaking your code.</p>
@@ -181,12 +372,12 @@
         </div>
       </section>
 
-      <section id="how" style="background:var(--paper-2)">
+      <section id="how" class="alt">
         <div class="wrap">
-          <div class="sec-head">
+          <div class="sec-head rv">
             <p class="eyebrow" style="justify-content:center"><span class="dot"></span>How it works</p>
             <h2>Three steps, start to <em>finish</em></h2>
-            <p>From raw <code>.po</code> files to deployed translations in a single, simple flow.</p>
+            <p>From raw <code>.po</code> files to deployed translations — each step links to its moment in the tutorial.</p>
           </div>
           <div class="steps" id="steps"></div>
         </div>
@@ -194,9 +385,9 @@
 
       <section>
         <div class="wrap">
-          <div class="band">
+          <div class="band rv">
             <h2>Ready to speed up your <em>translations?</em></h2>
-            <p>Join Odoo developers translating hundreds of entries in minutes. Free, open source, and yours to keep.</p>
+            <p>Translate hundreds of entries in minutes. Free, open source, and yours to keep.</p>
             <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">Download v1.0 — it's free</a>
           </div>
         </div>
@@ -204,7 +395,7 @@
 
       <section id="faq">
         <div class="wrap">
-          <div class="sec-head">
+          <div class="sec-head rv">
             <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Got questions?</p>
             <h2>Frequently asked <em>questions</em></h2>
           </div>
@@ -227,20 +418,180 @@
 
     <script>
       (function(){
-        var top=document.getElementById('top');
-        addEventListener('scroll',function(){top.classList.toggle('stuck',scrollY>8)},{passive:true});
-        var b=document.querySelector('.burger'),n=document.getElementById('nav');
-        b.addEventListener('click',function(){var o=n.classList.toggle('open');b.setAttribute('aria-expanded',String(o))});
-        n.addEventListener('click',function(e){if(e.target.tagName==='A'){n.classList.remove('open');b.setAttribute('aria-expanded','false')}});
-        document.getElementById('yr').textContent=new Date().getFullYear();
+        var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+        var still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var fine=matchMedia('(pointer: fine)').matches;
+        var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 
+        /* header + nav */
+        var top=$('#top');
+        var b=$('.burger'),n=$('#nav');
+        b.addEventListener('click',function(){var o=n.classList.toggle('open');b.setAttribute('aria-expanded',String(o))});
+        n.addEventListener('click',function(e){if(e.target.closest('a')){n.classList.remove('open');b.setAttribute('aria-expanded','false')}});
+        $('#yr').textContent=new Date().getFullYear();
+
+        /* pointer tilt helper: sets --mx/--my in [-1,1] on an element */
+        function tilt(area,target){
+          if(still||!fine)return;
+          area.addEventListener('pointermove',function(e){
+            var r=area.getBoundingClientRect();
+            target.style.setProperty('--mx',((e.clientX-r.left)/r.width*2-1).toFixed(3));
+            target.style.setProperty('--my',((e.clientY-r.top)/r.height*2-1).toFixed(3));
+          });
+          area.addEventListener('pointerleave',function(){target.style.setProperty('--mx',0);target.style.setProperty('--my',0)});
+        }
+
+        /* scroll: flatten 3D frames as they come into view */
+        var stage=$('#stage'),stack=$('#stack'),p3d=$('#p3d');
+        function onScroll(){
+          top.classList.toggle('stuck',scrollY>8);
+          if(still)return;
+          var vh=innerHeight;
+          var r=stage.getBoundingClientRect();
+          var t=Math.min(1,Math.max(0,(r.top-vh*.12)/(vh*.55)));
+          stack.style.setProperty('--tilt',t.toFixed(3));
+          var pr=p3d.getBoundingClientRect();
+          var pt=Math.min(1,Math.max(0,(pr.top-vh*.15)/(vh*.6)));
+          p3d.style.setProperty('--pt',pt.toFixed(3));
+        }
+        addEventListener('scroll',onScroll,{passive:true});addEventListener('resize',onScroll);onScroll();
+        tilt(stage,stack);tilt(p3d,p3d);tilt($('#ex3d'),$('#ex3d'));
+
+        /* reveal */
+        if('IntersectionObserver' in window&&!still){
+          var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -10% 0px'});
+          window.__rv=function(){$$('.rv:not(.in)').forEach(function(el){io.observe(el)})};
+        } else window.__rv=function(){$$('.rv').forEach(function(el){el.classList.add('in')})};
+
+        /* ---------- tutorial player ---------- */
+        var CH=[
+          [0,'Open the workspace','A clean start: the sidebar holds every action, the table is waiting for files.'],
+          [2.5,'Import .po files','Pick one or many .po files straight from your Odoo module.'],
+          [8,'Entries loaded','Files are merged and deduplicated into one sortable table.'],
+          [11,'Translate all','Confirm once — entries go to Gemini AI in parallel batches.'],
+          [14,'AI at work','Rows fill in live as translations stream back, placeholders kept intact.'],
+          [17.5,'Done — review & export','Every entry translated. Review, save, and export .po/.mo.']
+        ];
+        var v=$('#vid'),win=$('#vwin'),fill=$('#fill'),bar=$('#bar'),time=$('#time'),ol=$('#chapters'),ppi=$('#ppi');
+        var DUR=21;
+        var fmt=function(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+        ol.innerHTML=CH.map(function(c,i){return '<li><button type="button" data-i="'+i+'"><span class="ts">'+fmt(c[0])+'</span><strong>'+esc(c[1])+'</strong><small>'+esc(c[2])+'</small><span class="prog"><i></i></span></button></li>'}).join('');
+        var chBtns=$$('#chapters button');
+        function marks(){
+          $$('.bar__mk',bar).forEach(function(m){m.remove()});
+          CH.slice(1).forEach(function(c){var m=document.createElement('span');m.className='bar__mk';m.style.left=(c[0]/DUR*100)+'%';bar.appendChild(m)});
+        }
+        marks();
+        v.addEventListener('loadedmetadata',function(){if(isFinite(v.duration)&&v.duration>0){DUR=v.duration;bar.setAttribute('aria-valuemax',Math.round(DUR));marks();upd()}});
+        var PLAY='<path d="M7 4.5v15l12.5-7.5L7 4.5Z"/>',PAUSE='<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>';
+        function cur(t){var k=0;for(var i=0;i<CH.length;i++){if(t>=CH[i][0]-.05)k=i}return k}
+        function upd(){
+          var t=v.currentTime||0;fill.style.width=(t/DUR*100)+'%';time.textContent=fmt(t)+' / '+fmt(DUR);bar.setAttribute('aria-valuenow',Math.round(t));
+          var k=cur(t);chBtns.forEach(function(btn,i){
+            btn.classList.toggle('on',i===k);
+            var s=CH[i][0],e=i+1<CH.length?CH[i+1][0]:DUR;
+            var p=$('.prog i',btn);if(p)p.style.width=(i===k?Math.min(100,(t-s)/(e-s)*100):0)+'%';
+          });
+        }
+        function setPlaying(on){win.classList.toggle('playing',on);ppi.innerHTML=on?PAUSE:PLAY;$('#pp').setAttribute('aria-label',on?'Pause':'Play')}
+        function play(){var p=v.play();if(p&&p.catch)p.catch(function(){})}
+        function toggle(){v.paused?play():v.pause()}
+        v.addEventListener('play',function(){setPlaying(true)});v.addEventListener('pause',function(){setPlaying(false)});
+        v.addEventListener('timeupdate',upd);
+        v.addEventListener('ended',function(){v.currentTime=0;play()});
+        $('#pp').addEventListener('click',toggle);
+        $('#vwrap').addEventListener('click',toggle);
+        function seek(t){v.currentTime=Math.max(0,Math.min(DUR-.05,t));upd();play()}
+        bar.addEventListener('click',function(e){var r=bar.getBoundingClientRect();seek((e.clientX-r.left)/r.width*DUR)});
+        bar.addEventListener('keydown',function(e){if(e.key==='ArrowRight'){seek(v.currentTime+2);e.preventDefault()}if(e.key==='ArrowLeft'){seek(v.currentTime-2);e.preventDefault()}});
+        ol.addEventListener('click',function(e){var btn=e.target.closest('button');if(btn)seek(CH[+btn.dataset.i][0])});
+        $('#fs').addEventListener('click',function(){var el=$('#vwrap');(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el)});
+        /* autoplay muted when the player is on screen, pause when it leaves */
+        var autoplayed=false,userPaused=false;
+        [$('#pp'),$('#vwrap')].forEach(function(el){el.addEventListener('click',function(){userPaused=v.paused})});
+        if('IntersectionObserver' in window){
+          new IntersectionObserver(function(es){es.forEach(function(e){
+            if(e.isIntersecting&&e.intersectionRatio>.5){if(!still&&!userPaused){play();autoplayed=true}}
+            else if(!v.paused)v.pause();
+          })},{threshold:[0,.5,.8]}).observe(win);
+        }
+        function goTutorial(t){var sec=$('#tutorial');sec.scrollIntoView({behavior:still?'auto':'smooth'});setTimeout(function(){seek(t||0)},still?0:650)}
+        $$('[data-play]').forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();goTutorial(0)})});
+        upd();
+
+        /* ---------- interface explorer ---------- */
+        var HS=[
+          ['Sidebar','import','Import files','Load multiple .po files from your Odoo modules. Files are automatically merged and deduplicated.',15.5,1.3,17,4.2],
+          ['Sidebar','save','Save','Write translated entries back to the original .po file with full metadata preserved.',20.3,1.3,17,4.2],
+          ['Sidebar','export','Export','Export translated files and compile them to .mo for Odoo deployment.',25.1,1.3,17,4.2],
+          ['Sidebar','api-key','API key','Store your Google Gemini API key locally to enable AI-powered translation.',34,1.3,17,7],
+          ['Sidebar','language-select','Languages','Choose source and target languages. Auto-detection analyses your .po files and suggests the right pair.',41.5,1.3,17,9],
+          ['Sidebar','translate-all','Translate all','Translate every entry with Gemini 2.5 Flash-Lite, processed in parallel for speed.',49,1.3,17,4.2],
+          ['Sidebar','translate-selected','Translate selected','Translate only the entries you picked — ideal for targeted updates.',53.8,1.3,17,4.2],
+          ['Sidebar','undo-redo','Undo & redo','Unlimited undo and redo, with a full history of every change.',61.2,1.3,17,4.5],
+          ['Sidebar','delete-selected','Delete selected','Remove unwanted entries from the translation table.',65.8,1.3,17,4.2],
+          ['Sidebar','statistics','Statistics','Open detailed statistics about your translation project, with charts and metrics.',70.1,1.3,17,4.2],
+          ['Sidebar','statistics-panel','Live progress','Real-time counts of translated, pending and selected entries.',74.5,1.3,17,17],
+          ['Toolbar','search','Search','Full-text search across every source string and translation, with live results.',2.5,21.5,32,3.5],
+          ['Toolbar','filters','Status filters','Isolate pending, translated or all entries in one click.',2.5,54,23,3.5],
+          ['Toolbar','select-actions','Selection','Select or clear all entries at once for batch operations.',2.5,78,20,3.5],
+          ['Table','table-headers','Columns','Source text, translation, module/model/field and actions — the shape of every entry.',6,20,78.5,3],
+          ['Table','main-content','Translation table','The main workspace: every entry with its source, translation and metadata, editable inline.',9,20,78.5,83],
+          ['Table','pagination','Pagination','Move through large catalogues page by page.',93,20,58,4],
+          ['Table','items-per-page','Items per page','Choose how many entries appear on each page.',93,79,10,4],
+          ['Table','clear-selection-btn','Quick action','A one-click action for the current selection.',93,90,9,4]
+        ];
+        var cam=$('#excam'),view=$('#exview'),tipK=$('#exk'),tipT=$('#ext'),tipD=$('#exd'),ex3d=$('#ex3d');
+        HS.forEach(function(h,i){
+          var el=document.createElement('button');el.type='button';el.className='hs';el.dataset.i=i;el.setAttribute('aria-label',h[2]);
+          el.style.cssText='top:'+h[4]+'%;left:'+h[5]+'%;width:'+h[6]+'%;height:'+h[7]+'%';
+          cam.appendChild(el);
+        });
+        var groups={};HS.forEach(function(h,i){(groups[h[0]]=groups[h[0]]||[]).push(i)});
+        $('#groups').innerHTML=Object.keys(groups).map(function(g){
+          return '<div class="grp"><h4>'+g+'</h4><div class="chips">'+groups[g].map(function(i){return '<button type="button" class="chip" data-i="'+i+'">'+esc(HS[i][2])+'</button>'}).join('')+'</div></div>';
+        }).join('');
+        $('#excount').textContent=HS.length+' controls · '+Object.keys(groups).length+' areas';
+        var active=-1,tourT=null;
+        function focusOn(i,fromTour){
+          if(!fromTour)stopTour();
+          active=i;var h=HS[i];
+          var x=h[5]/100,y=h[4]/100,w=h[6]/100,hh=h[7]/100;
+          var s=Math.max(1,Math.min(2.6,.55/Math.max(w,hh)));
+          var cx=x+w/2,cy=y+hh/2;
+          var tx=Math.min(0,Math.max(1-s,.5-cx*s)),ty=Math.min(0,Math.max(1-s,.42-cy*s));
+          cam.style.transform='translate('+(tx*100)+'%,'+(ty*100)+'%) scale('+s+')';
+          ex3d.style.setProperty('--ry',((cx-.5)*-8).toFixed(2)+'deg');
+          view.classList.add('focus');
+          $$('.hs',cam).forEach(function(el){el.classList.toggle('on',+el.dataset.i===i)});
+          $$('#groups .chip').forEach(function(c){c.classList.toggle('on',+c.dataset.i===i)});
+          tipK.textContent=h[0];tipT.textContent=h[2];tipD.textContent=h[3];
+          var tipEl=$('#extip');tipEl.style.top=(cy>.6?'1rem':'auto');tipEl.style.bottom=(cy>.6?'auto':'1rem');
+        }
+        function reset(){
+          stopTour();active=-1;cam.style.transform='';ex3d.style.setProperty('--ry','0deg');view.classList.remove('focus');
+          $$('.hs',cam).forEach(function(el){el.classList.remove('on')});$$('#groups .chip').forEach(function(c){c.classList.remove('on')});
+        }
+        function stopTour(){if(tourT){clearInterval(tourT);tourT=null;$('#tour span').textContent='Take the tour'}}
+        cam.addEventListener('click',function(e){var el=e.target.closest('.hs');if(!el)return;var i=+el.dataset.i;i===active?reset():focusOn(i)});
+        $('#groups').addEventListener('click',function(e){var c=e.target.closest('.chip');if(!c)return;var i=+c.dataset.i;i===active?reset():focusOn(i)});
+        $('#reset').addEventListener('click',reset);
+        view.addEventListener('keydown',function(e){if(e.key==='Escape')reset()});
+        $('#tour').addEventListener('click',function(){
+          if(tourT){stopTour();return}
+          var order=[0,4,5,11,12,15,10,2],k=0;
+          focusOn(order[k],true);$('#tour span').textContent='Stop tour';
+          tourT=setInterval(function(){k++;if(k>=order.length){stopTour();reset();return}focusOn(order[k],true)},3200);
+        });
+
+        /* ---------- features ---------- */
         var ic={
           ai:'<path d="M12 3a4 4 0 0 1 4 4 4 4 0 0 1 0 8 4 4 0 0 1-8 0 4 4 0 0 1 0-8 4 4 0 0 1 4-4Z"/><path d="M12 7v4l2 2"/>',
           off:'<path d="M3 12a9 9 0 0 1 9-9m9 9a9 9 0 0 1-9 9"/><path d="M3 12h4m10 0h4"/><path d="m5 5 14 14"/>',
           fast:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
           detect:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
-          var:'<path d="M8 3H6a2 2 0 0 0-2 2v4m0 6v4a2 2 0 0 0 2 2h2m8-18h2a2 2 0 0 1 2 2v4m0 6v4a2 2 0 0 1-2 2h-2"/>',
-          ui:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6" cy="6.5" r=".6" fill="currentColor"/>',
+          variable:'<path d="M8 3H6a2 2 0 0 0-2 2v4m0 6v4a2 2 0 0 0 2 2h2m8-18h2a2 2 0 0 1 2 2v4m0 6v4a2 2 0 0 1-2 2h-2"/>',
+          ui:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/>',
           cache:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
           chart:'<path d="M4 20V10M10 20V4m6 16v-8m6 8V8"/>',
           batch:'<rect x="3" y="4" width="14" height="14" rx="2"/><path d="M7 20h11a2 2 0 0 0 2-2V8"/>'
@@ -250,25 +601,34 @@
           ['off','Offline mode','Built-in glossaries for EN↔FR and EN↔ES work completely without an internet connection.'],
           ['fast','Lightning fast','70–90% cache hit rate means repeated translations are instant. Batch processing supported.'],
           ['detect','Smart detection','95%+ accuracy in language detection using advanced ML models and heuristics.'],
-          ['var','Variable preservation','Automatically preserves placeholders like %(name)s, %s and {x} to keep your code functional.'],
+          ['variable','Variable preservation','Automatically preserves placeholders like %(name)s, %s and {x} to keep your code functional.'],
           ['ui','Modern UI','A clean, professional interface built with CustomTkinter — intuitive from the first run.'],
           ['cache','Smart caching','A local cache stores translations for instant reuse across all your projects.'],
           ['chart','Detailed analytics','Track API usage, cache performance, errors and corrections in real time.'],
           ['batch','Batch processing','Import multiple .po files, translate hundreds of entries, and export with one click.']
         ];
-        document.getElementById('feat-grid').innerHTML=feats.map(function(f){
-          return '<article class="card"><div class="card__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ic[f[0]]+'</svg></div><h3>'+f[1]+'</h3><p>'+f[2]+'</p></article>';
+        $('#feat-grid').innerHTML=feats.map(function(f,i){
+          return '<article class="card rv" style="transition-delay:'+(i%3*80)+'ms"><div class="card__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ic[f[0]]+'</svg></div><h3>'+f[1]+'</h3><p>'+f[2]+'</p></article>';
         }).join('');
+        if(!still&&fine){
+          $$('.card').forEach(function(c){
+            c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform='rotateX('+(-y*8)+'deg) rotateY('+(x*10)+'deg) translateZ(6px)'});
+            c.addEventListener('pointerleave',function(){c.style.transform=''});
+          });
+        }
 
+        /* ---------- steps (linked to tutorial chapters) ---------- */
         var steps=[
-          ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.'],
-          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.'],
-          ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.']
+          ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.','screenshots/import_po_file.png',2.5],
+          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.','screenshots/main-interface.png',11],
+          ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.','screenshots/main-interface.png',17.5]
         ];
-        document.getElementById('steps').innerHTML=steps.map(function(s){
-          return '<div class="step"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p></div>';
+        $('#steps').innerHTML=steps.map(function(s,i){
+          return '<div class="step rv" style="transition-delay:'+(i*90)+'ms"><div class="step__shot"><img src="'+s[2]+'" alt="" loading="lazy" style="object-position:'+(i===1?'0 30%':'0 0')+'" /></div><div class="step__in"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p><button class="watch" type="button" data-t="'+s[3]+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>Watch this step · '+fmt(s[3])+'</button></div></div>';
         }).join('');
+        $('#steps').addEventListener('click',function(e){var w=e.target.closest('.watch');if(w)goTutorial(+w.dataset.t)});
 
+        /* ---------- faq ---------- */
         var faqs=[
           ['Is PO Translator really free?','Yes — 100% free and open source under the MIT license. Use it for personal or commercial projects at no cost.'],
           ['Do I need an API key?','For online AI translation you need a free Google Gemini API key. For offline mode, no API key is needed.'],
@@ -277,9 +637,11 @@
           ['How accurate are translations?','~95% accurate for Odoo-specific terminology. Always review translations before deploying to production.'],
           ['Can I contribute?','Absolutely — check the GitHub repository for issues and contribution guidelines. All contributions are welcome.']
         ];
-        document.getElementById('faq-list').innerHTML=faqs.map(function(q){
-          return '<details><summary>'+q[0]+'<span class="pm" aria-hidden="true"></span></summary><p>'+q[1]+'</p></details>';
+        $('#faq-list').innerHTML=faqs.map(function(q){
+          return '<details class="rv"><summary>'+q[0]+'<span class="pm" aria-hidden="true"></span></summary><p>'+q[1]+'</p></details>';
         }).join('');
+
+        window.__rv();
       })();
     </script>
   </body>
