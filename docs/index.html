@@ -159,6 +159,7 @@
       .ex-tip p{color:var(--ink-soft);font-size:.9rem}
       .ex-side{display:flex;flex-direction:column;gap:1.1rem}
       .ex-tools{display:flex;gap:.6rem;flex-wrap:wrap}
+      #groups{display:flex;flex-direction:column;gap:1.2rem}
       .grp h4{font:500 .7rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:.6rem}
       .chips{display:flex;flex-wrap:wrap;gap:.4rem}
       .chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:.38rem .8rem;font-size:.82rem;font-weight:500;color:var(--ink-soft);cursor:pointer;transition:all .2s}
@@ -180,8 +181,10 @@
       .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;counter-reset:s}
       .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
       .step__shot{position:relative;aspect-ratio:16/10;overflow:hidden;background:#0f1722;border-bottom:1px solid var(--line-soft);perspective:800px}
-      .step__shot img{width:100%;height:100%;object-fit:cover;object-position:top left;transform:scale(1.04);transition:transform .8s var(--ease)}
-      .step:hover .step__shot img{transform:scale(1.12) rotateX(4deg)}
+      .step__shot video{width:100%;height:100%;object-fit:cover;object-position:50% 20%;transform:scale(1.18);transition:transform .8s var(--ease)}
+      .step:hover .step__shot video{transform:scale(1.3) rotateX(4deg)}
+      .step__shot .live{position:absolute;left:.7rem;top:.7rem;font:500 .66rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:rgba(246,245,241,.92);color:var(--sage-deep);border-radius:999px;padding:.35rem .6rem;opacity:0;transform:translateY(-4px);transition:.3s}
+      .step:hover .step__shot .live{opacity:1;transform:none}
       .step__in{padding:1.5rem}
       .step__n{counter-increment:s;font-family:var(--serif);font-size:2.2rem;color:var(--sage);line-height:1;display:block;margin-bottom:.7rem}
       .step__n::before{content:"0" counter(s)}
@@ -619,14 +622,22 @@
 
         /* ---------- steps (linked to tutorial chapters) ---------- */
         var steps=[
-          ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.','screenshots/import_po_file.png',2.5],
-          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.','screenshots/main-interface.png',11],
-          ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.','screenshots/main-interface.png',17.5]
+          ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.',2.5,8,3.2],
+          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.',11,17.5,14.5],
+          ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.',17.5,21,20.4]
         ];
         $('#steps').innerHTML=steps.map(function(s,i){
-          return '<div class="step rv" style="transition-delay:'+(i*90)+'ms"><div class="step__shot"><img src="'+s[2]+'" alt="" loading="lazy" style="object-position:'+(i===1?'0 30%':'0 0')+'" /></div><div class="step__in"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p><button class="watch" type="button" data-t="'+s[3]+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>Watch this step · '+fmt(s[3])+'</button></div></div>';
+          return '<div class="step rv" style="transition-delay:'+(i*90)+'ms"><div class="step__shot" data-s="'+s[2]+'" data-e="'+s[3]+'" data-p="'+s[4]+'"><video muted playsinline preload="metadata" aria-hidden="true" src="screenshots/odoo_translator_import_flow.mp4#t='+s[4]+'"></video><span class="live">Preview</span></div><div class="step__in"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p><button class="watch" type="button" data-t="'+s[2]+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12.5-7.5L7 4.5Z"/></svg>Watch this step · '+fmt(s[2])+'</button></div></div>';
         }).join('');
         $('#steps').addEventListener('click',function(e){var w=e.target.closest('.watch');if(w)goTutorial(+w.dataset.t)});
+        /* hover a step: loop its segment of the tutorial */
+        $$('.step__shot').forEach(function(sh){
+          var sv=$('video',sh),s0=+sh.dataset.s,s1=+sh.dataset.e,ps=+sh.dataset.p;
+          sv.addEventListener('timeupdate',function(){if(sv.currentTime>=s1-.1)sv.currentTime=s0});
+          var card=sh.closest('.step');
+          card.addEventListener('pointerenter',function(){if(still)return;sv.currentTime=s0;var p=sv.play();if(p&&p.catch)p.catch(function(){})});
+          card.addEventListener('pointerleave',function(){sv.pause();sv.currentTime=ps});
+        });
 
         /* ---------- faq ---------- */
         var faqs=[
