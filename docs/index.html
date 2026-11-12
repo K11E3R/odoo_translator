@@ -1,2324 +1,286 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="PO Translator - Professional AI-powered translation tool for Odoo .po files. Fast, intelligent, and completely free.">
-    <meta name="keywords" content="Odoo, PO files, translation, AI translator, Gemini, localization, i18n">
-    <meta name="author" content="K11E3R">
-    <meta property="og:title" content="PO Translator - AI-Powered Odoo Translation">
-    <meta property="og:description" content="Fast, intelligent tool for translating Odoo .po files with AI">
-    <meta property="og:image" content="https://raw.githubusercontent.com/K11E3R/odoo_translator/main/docs/screenshots/main-interface.png">
-    <title>PO Translator - AI-Powered Odoo Translation Tool ⚡</title>
-    
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PO Translator — AI translation for Odoo .po files</title>
+    <meta name="description" content="Fast, intelligent translation for Odoo .po files. Works online with Gemini AI or completely offline with built-in glossaries. Free and open source." />
+    <meta name="author" content="Yassine Naanani" />
+    <meta name="theme-color" content="#f6f5f1" />
+    <link rel="canonical" href="https://k11e3r.github.io/odoo_translator/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="PO Translator — AI translation for Odoo .po files" />
+    <meta property="og:description" content="Translate hundreds of Odoo .po entries in minutes. Online with Gemini AI or fully offline. Free and open source." />
+    <meta property="og:url" content="https://k11e3r.github.io/odoo_translator/" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6b5b'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%23f6f5f1' font-family='Georgia,serif'%3EP%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #6366f1;
-            --primary-light: #818cf8;
-            --primary-dark: #4f46e5;
-            --secondary: #06b6d4;
-            --secondary-light: #22d3ee;
-            --accent: #ec4899;
-            --accent-light: #f472b6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            
-            --dark-900: #0a0a0f;
-            --dark-800: #141420;
-            --dark-700: #1a1a2e;
-            --dark-600: #1e2942;
-            
-            --glass-bg: rgba(20, 20, 32, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.15);
-            
-            --text-primary: #ffffff;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--dark-900);
-            color: var(--text-primary);
-            line-height: 1.65;
-            font-size: 15px;
-            overflow-x: hidden;
-            position: relative;
-            cursor: default;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            letter-spacing: -0.01em;
-        }
-
-        /* Advanced Animated Background */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .gradient-mesh {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%),
-                radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.1) 0px, transparent 50%);
-            animation: mesh-move 20s ease-in-out infinite;
-        }
-
-        @keyframes mesh-move {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -30px) scale(1.1); }
-            66% { transform: translate(-30px, 30px) scale(0.9); }
-        }
-
-        .gradient-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(100px);
-            opacity: 0.4;
-            animation: float-orb 25s ease-in-out infinite;
-        }
-
-        .orb-1 {
-            width: 600px;
-            height: 600px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            top: -300px;
-            right: -300px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 500px;
-            height: 500px;
-            background: linear-gradient(135deg, var(--accent), var(--primary));
-            bottom: -250px;
-            left: -250px;
-            animation-delay: 8s;
-        }
-
-        .orb-3 {
-            width: 400px;
-            height: 400px;
-            background: linear-gradient(135deg, var(--secondary), var(--success));
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: 15s;
-        }
-
-        @keyframes float-orb {
-            0%, 100% { 
-                transform: translate(0, 0) scale(1) rotate(0deg);
-            }
-            25% { 
-                transform: translate(50px, -50px) scale(1.1) rotate(90deg);
-            }
-            50% { 
-                transform: translate(-50px, 50px) scale(0.9) rotate(180deg);
-            }
-            75% { 
-                transform: translate(30px, 30px) scale(1.05) rotate(270deg);
-            }
-        }
-
-        /* Advanced Particles */
-        .particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-
-        .particle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.8), transparent);
-            border-radius: 50%;
-            animation: particle-float 20s infinite;
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        @keyframes particle-float {
-            0% {
-                transform: translateY(100vh) translateX(0) scale(0);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-                transform: translateY(90vh) translateX(20px) scale(1);
-            }
-            90% {
-                opacity: 1;
-                transform: translateY(10vh) translateX(-30px) scale(1);
-            }
-            100% {
-                transform: translateY(-10vh) translateX(50px) scale(0);
-                opacity: 0;
-            }
-        }
-
-        /* Navigation with Glassmorphism */
-        nav {
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-bottom: 1px solid var(--glass-border);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        nav.scrolled {
-            padding: 0.5rem 0;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            background: rgba(20, 20, 32, 0.85);
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0.875rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: padding 0.3s;
-        }
-
-        nav.scrolled .nav-container {
-            padding: 0.625rem 2rem;
-        }
-
-        .logo {
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: transform 0.3s;
-            letter-spacing: -0.02em;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-        }
-
-        .logo-icon {
-            font-size: 1.5rem;
-            animation: rotate-icon 8s linear infinite;
-            filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.5));
-        }
-
-        @keyframes rotate-icon {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2.5rem;
-            list-style: none;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 0.875rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            padding: 0.5rem 0;
-            letter-spacing: -0.01em;
-        }
-
-        .nav-links a::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-            transform: translateY(-2px);
-        }
-
-        .nav-links a:hover::before {
-            width: 100%;
-        }
-
-        .nav-cta {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            padding: 0.6rem 1.5rem;
-            border-radius: 50px;
-            color: white !important;
-            font-weight: 600;
-            font-size: 0.875rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-            position: relative;
-            overflow: hidden;
-            letter-spacing: -0.01em;
-        }
-
-        .nav-cta::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.6s;
-        }
-
-        .nav-cta:hover::before {
-            left: 100%;
-        }
-
-        .nav-cta::after {
-            display: none;
-        }
-
-        .nav-cta:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
-        }
-
-        /* Hero Section with Advanced Animations */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 6rem 2rem 3rem;
-            position: relative;
-            z-index: 1;
-            overflow: hidden;
-        }
-
-        .hero-content {
-            max-width: 1400px;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1.25rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            margin-bottom: 2rem;
-            animation: fadeInDown 1s ease 0.2s both;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-        }
-
-        .hero-badge:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.3);
-            border-color: var(--primary);
-        }
-
-        .hero-badge-dot {
-            width: 10px;
-            height: 10px;
-            background: var(--success);
-            border-radius: 50%;
-            animation: pulse-dot 2s infinite;
-            box-shadow: 0 0 10px var(--success);
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { 
-                opacity: 1; 
-                transform: scale(1);
-                box-shadow: 0 0 10px var(--success);
-            }
-            50% { 
-                opacity: 0.7; 
-                transform: scale(1.3);
-                box-shadow: 0 0 20px var(--success);
-            }
-        }
-
-        .hero h1 {
-            font-size: clamp(2rem, 7vw, 3.5rem);
-            font-weight: 800;
-            line-height: 1.15;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 30%, var(--secondary) 60%, var(--accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeInUp 1s ease 0.4s both;
-            position: relative;
-            letter-spacing: -0.03em;
-        }
-
-        .hero h1::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 2px;
-            animation: expand-line 1s ease 1.2s both;
-        }
-
-        @keyframes expand-line {
-            from {
-                width: 0;
-                opacity: 0;
-            }
-            to {
-                width: 200px;
-                opacity: 1;
-            }
-        }
-
-        .hero-gradient-text {
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradient-shift 5s ease infinite;
-            background-size: 200% 200%;
-        }
-
-        @keyframes gradient-shift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
-
-        .hero-subtitle {
-            font-size: clamp(0.95rem, 2.5vw, 1.15rem);
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin: 0 auto 3rem;
-            line-height: 1.75;
-            animation: fadeInUp 1s ease 0.6s both;
-            letter-spacing: -0.01em;
-            font-weight: 400;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            animation: fadeInUp 1s ease 0.8s both;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-40px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Enhanced Buttons */
-        .btn {
-            padding: 0.875rem 2rem;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            gap: 0.6rem;
-            border: none;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            letter-spacing: -0.01em;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .btn span {
-            position: relative;
-            z-index: 1;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.5);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 50px rgba(99, 102, 241, 0.7);
-        }
-
-        .btn-secondary {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: white;
-            border: 2px solid var(--glass-border);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--primary);
-            background: rgba(99, 102, 241, 0.2);
-            transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
-        }
-
-        /* Stats with Parallax */
-        .stats {
-            padding: 4rem 2rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-top: 1px solid var(--glass-border);
-            border-bottom: 1px solid var(--glass-border);
-            position: relative;
-            z-index: 1;
-        }
-
-        .stats-grid {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 4rem;
-        }
-
-        .stat-item {
-            text-align: center;
-            animation: fadeInUp 0.8s ease both;
-            transition: transform 0.3s;
-        }
-
-        .stat-item:hover {
-            transform: translateY(-10px);
-        }
-
-        .stat-item:nth-child(1) { animation-delay: 0.1s; }
-        .stat-item:nth-child(2) { animation-delay: 0.2s; }
-        .stat-item:nth-child(3) { animation-delay: 0.3s; }
-        .stat-item:nth-child(4) { animation-delay: 0.4s; }
-
-        .stat-number {
-            font-size: 2.75rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.4rem;
-            display: block;
-            animation: count-up 2s ease;
-            letter-spacing: -0.03em;
-        }
-
-        @keyframes count-up {
-            from {
-                opacity: 0;
-                transform: translateY(20px) scale(0.5);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            font-weight: 500;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-        }
-
-        /* Section Styles */
-        section {
-            padding: 6rem 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-badge {
-            display: inline-block;
-            padding: 0.45rem 1.25rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
-            color: var(--primary-light);
-            font-weight: 600;
-            margin-bottom: 1.25rem;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            animation: fadeInDown 0.8s ease;
-        }
-
-        .section-title {
-            font-size: clamp(1.75rem, 5vw, 2.75rem);
-            font-weight: 800;
-            margin-bottom: 1.25rem;
-            background: linear-gradient(135deg, #fff, var(--text-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeInUp 0.8s ease 0.2s both;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-
-        .section-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            max-width: 650px;
-            margin: 0 auto;
-            animation: fadeInUp 0.8s ease 0.4s both;
-            line-height: 1.7;
-            letter-spacing: -0.01em;
-            font-weight: 400;
-        }
-
-        /* Enhanced Feature Cards */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 1.75rem;
-        }
-
-        .feature-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            padding: 2rem;
-            border-radius: 20px;
-            border: 1px solid var(--glass-border);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .feature-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .feature-card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .feature-card:hover::after {
-            opacity: 1;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-15px) scale(1.02);
-            border-color: var(--primary);
-            box-shadow: 0 25px 80px rgba(99, 102, 241, 0.4);
-        }
-
-        .feature-icon {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.75rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 15px 40px rgba(99, 102, 241, 0.4);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            z-index: 1;
-        }
-
-        .feature-card:hover .feature-icon {
-            transform: scale(1.15) rotate(10deg);
-            box-shadow: 0 20px 50px rgba(99, 102, 241, 0.6);
-        }
-
-        .feature-card h3 {
-            font-size: 1.125rem;
-            font-weight: 700;
-            margin-bottom: 0.875rem;
-            color: var(--text-primary);
-            position: relative;
-            z-index: 1;
-            letter-spacing: -0.02em;
-            line-height: 1.4;
-        }
-
-        .feature-card p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            position: relative;
-            z-index: 1;
-            font-size: 0.9375rem;
-            letter-spacing: -0.01em;
-        }
-
-        /* Screenshot Section */
-        .screenshot-section {
-            background: var(--dark-800);
-            padding: 6rem 2rem;
-            position: relative;
-        }
-
-        .screenshot-container {
-            max-width: 1300px;
-            margin: 0 auto;
-            border-radius: 30px;
-            overflow: hidden;
-            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
-            border: 2px solid var(--glass-border);
-            position: relative;
-            transition: transform 0.5s;
-        }
-
-        .screenshot-container::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-            border-radius: 30px;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-
-        .screenshot-container:hover::before {
-            opacity: 0.5;
-        }
-
-        .screenshot-container:hover {
-            transform: scale(1.03);
-        }
-
-        .screenshot-container img,
-        .screenshot-container video {
-            width: 100%;
-            display: block;
-            transition: transform 0.5s;
-        }
-
-        .screenshot-container:hover img,
-        .screenshot-container:hover video {
-            transform: scale(1.02);
-        }
-
-        .screenshot-container video {
-            background: var(--dark-700);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Interactive Interface Tour */
-        .interactive-interface-container {
-            position: relative;
-            max-width: 1100px;
-            margin: 0 auto;
-            background: var(--dark-800);
-            border-radius: 20px;
-            padding: 1.5rem;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
-        }
-
-        .interface-wrapper {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-            border-radius: 12px;
-        }
-
-        .interface-image {
-            width: 100%;
-            height: auto;
-            display: block;
-            border-radius: 12px;
-            transition: transform 0.3s ease;
-        }
-
-        .hover-zone {
-            position: absolute;
-            cursor: pointer;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 10;
-            background: rgba(99, 102, 241, 0);
-        }
-
-        .hover-zone::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border: 2px dashed rgba(99, 102, 241, 0.3);
-            border-radius: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-
-        .hover-zone:hover::before {
-            opacity: 1;
-            animation: dash-rotate 20s linear infinite;
-        }
-
-        @keyframes dash-rotate {
-            to {
-                stroke-dashoffset: -100;
-            }
-        }
-
-        .hover-zone:hover {
-            background: rgba(99, 102, 241, 0.12);
-            border-color: var(--primary);
-            box-shadow: 0 0 25px rgba(99, 102, 241, 0.5), inset 0 0 20px rgba(99, 102, 241, 0.1);
-            transform: scale(1.01);
-        }
-
-        .hover-zone.active {
-            background: rgba(99, 102, 241, 0.18);
-            border-color: var(--primary-light);
-            box-shadow: 0 0 35px rgba(99, 102, 241, 0.7), inset 0 0 25px rgba(99, 102, 241, 0.15);
-            animation: pulse-zone 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse-zone {
-            0%, 100% {
-                box-shadow: 0 0 35px rgba(99, 102, 241, 0.7), inset 0 0 25px rgba(99, 102, 241, 0.15);
-            }
-            50% {
-                box-shadow: 0 0 55px rgba(99, 102, 241, 1), inset 0 0 30px rgba(99, 102, 241, 0.25);
-            }
-        }
-
-        /* Hint Indicator */
-        .tour-hint {
-            position: absolute;
-            top: -50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            animation: bounce-hint 2s ease-in-out infinite;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            z-index: 5;
-        }
-
-        @keyframes bounce-hint {
-            0%, 100% {
-                transform: translateX(-50%) translateY(0);
-            }
-            50% {
-                transform: translateX(-50%) translateY(-10px);
-            }
-        }
-
-        .tour-hint::after {
-            content: '👆';
-            margin-left: 0.5rem;
-            animation: point-hint 1.5s ease-in-out infinite;
-        }
-
-        @keyframes point-hint {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(5px);
-            }
-        }
-
-        .feature-tooltip {
-            position: absolute;
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 1.25rem;
-            max-width: 340px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(10px) scale(0.95);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-        }
-
-        .feature-tooltip.visible {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            pointer-events: auto;
-        }
-
-        .tooltip-arrow {
-            position: absolute;
-            width: 0;
-            height: 0;
-            border: 12px solid transparent;
-            z-index: 1001;
-        }
-
-        .tooltip-arrow.top {
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-bottom-color: var(--glass-bg);
-            border-top: none;
-        }
-
-        .tooltip-arrow.bottom {
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            border-top-color: var(--glass-bg);
-            border-bottom: none;
-        }
-
-        .tooltip-arrow.left {
-            right: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            border-right-color: var(--glass-bg);
-            border-left: none;
-        }
-
-        .tooltip-arrow.right {
-            left: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            border-left-color: var(--glass-bg);
-            border-right: none;
-        }
-
-        .tooltip-header {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-            margin-bottom: 0.875rem;
-        }
-
-        .tooltip-icon {
-            font-size: 1.25rem;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 8px;
-            flex-shrink: 0;
-        }
-
-        .tooltip-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 0;
-            letter-spacing: -0.02em;
-        }
-
-        .tooltip-description {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            line-height: 1.65;
-            margin-bottom: 0.875rem;
-            letter-spacing: -0.01em;
-        }
-
-        .tooltip-details {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 0.75rem;
-        }
-
-        .tooltip-details strong {
-            color: var(--primary-light);
-            font-weight: 600;
-        }
-
-        .tooltip-tech {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .tech-badge {
-            display: inline-block;
-            padding: 0.2rem 0.625rem;
-            background: rgba(99, 102, 241, 0.15);
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 4px;
-            font-size: 0.6875rem;
-            color: var(--primary-light);
-            font-weight: 500;
-            letter-spacing: 0.02em;
-        }
-
-        .screenshot-placeholder {
-            padding: 10rem 4rem;
-            text-align: center;
-            background: linear-gradient(135deg, var(--dark-700), var(--dark-600));
-        }
-
-        /* Steps with 3D Effect */
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 3rem;
-            position: relative;
-        }
-
-        .step-card {
-            text-align: center;
-            padding: 2rem;
-            position: relative;
-            transition: transform 0.4s;
-        }
-
-        .step-card:hover {
-            transform: translateY(-10px);
-        }
-
-        .step-number {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 800;
-            margin: 0 auto 1.75rem;
-            box-shadow: 0 15px 50px rgba(99, 102, 241, 0.5);
-            position: relative;
-            z-index: 2;
-            transition: all 0.4s;
-        }
-
-        .step-card:hover .step-number {
-            transform: scale(1.1) rotate(360deg);
-            box-shadow: 0 20px 60px rgba(99, 102, 241, 0.7);
-        }
-
-        .step-card::before {
-            content: '';
-            position: absolute;
-            top: 50px;
-            left: 50%;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-            z-index: 1;
-            opacity: 0.3;
-        }
-
-        .step-card:last-child::before {
-            display: none;
-        }
-
-        .step-card h3 {
-            font-size: 1.125rem;
-            font-weight: 700;
-            margin-bottom: 0.875rem;
-            color: var(--text-primary);
-            letter-spacing: -0.02em;
-        }
-
-        .step-card p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.9375rem;
-            letter-spacing: -0.01em;
-        }
-
-        /* CTA Section with Gradient Animation */
-        .cta-section {
-            padding: 6rem 2rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-section::before {
-            content: '';
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            top: -300px;
-            right: -300px;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .cta-section::after {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 50%;
-            bottom: -250px;
-            left: -250px;
-            animation: float 25s ease-in-out infinite reverse;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(50px, -50px) scale(1.1); }
-        }
-
-        .cta-content {
-            max-width: 900px;
-            margin: 0 auto;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-        }
-
-        .cta-section h2 {
-            font-size: clamp(1.875rem, 5vw, 3rem);
-            font-weight: 800;
-            margin-bottom: 1.25rem;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-        }
-
-        .cta-section p {
-            font-size: 1rem;
-            margin-bottom: 3rem;
-            opacity: 0.95;
-            letter-spacing: -0.01em;
-            line-height: 1.7;
-        }
-
-        .cta-section .btn {
-            background: white;
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 0.9375rem;
-            padding: 0.875rem 2rem;
-        }
-
-        .cta-section .btn:hover {
-            background: var(--text-primary);
-            transform: translateY(-8px) scale(1.08);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        }
-
-        /* Enhanced FAQ */
-        .faq-container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        .faq-item {
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            margin-bottom: 2rem;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .faq-item:hover {
-            border-color: var(--primary);
-            box-shadow: 0 15px 50px rgba(99, 102, 241, 0.2);
-        }
-
-        .faq-question {
-            padding: 1.5rem 2rem;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s;
-            letter-spacing: -0.01em;
-        }
-
-        .faq-question:hover {
-            color: var(--primary-light);
-            padding-left: 3rem;
-        }
-
-        .faq-icon {
-            font-size: 1.8rem;
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            color: var(--primary);
-        }
-
-        .faq-item.active .faq-icon {
-            transform: rotate(45deg) scale(1.2);
-        }
-
-        .faq-answer {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), padding 0.5s;
-            padding: 0 2rem;
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.9375rem;
-            letter-spacing: -0.01em;
-        }
-
-        .faq-item.active .faq-answer {
-            max-height: 500px;
-            padding: 0 2rem 1.5rem;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--dark-800);
-            padding: 5rem 2rem 2rem;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 4rem;
-            margin-bottom: 4rem;
-        }
-
-        .footer-section h4 {
-            font-size: 0.9375rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        .footer-links {
-            list-style: none;
-        }
-
-        .footer-links li {
-            margin-bottom: 1rem;
-        }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-block;
-            font-size: 0.875rem;
-            letter-spacing: -0.01em;
-        }
-
-        .footer-links a:hover {
-            color: var(--primary-light);
-            padding-left: 8px;
-            transform: translateX(5px);
-        }
-
-        .footer-bottom {
-            text-align: center;
-            padding-top: 3rem;
-            border-top: 1px solid var(--glass-border);
-            color: var(--text-muted);
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .social-link {
-            width: 50px;
-            height: 50px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .social-link:hover {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: white;
-            transform: translateY(-8px) rotate(360deg) scale(1.1);
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.5);
-        }
-
-        /* Scroll Animations */
-        .animate-on-scroll {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .animate-on-scroll.animated {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Mobile Menu */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.8rem;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .mobile-menu-btn:hover {
-            transform: scale(1.1);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .mobile-menu-btn {
-                display: block;
-            }
-
-            .hero h1 {
-                font-size: 1.875rem;
-            }
-
-            .hero-buttons {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .btn {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .features-grid,
-            .steps-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .step-card::before {
-                display: none;
-            }
-
-            section {
-                padding: 4rem 1.5rem;
-            }
-
-            .stat-number {
-                font-size: 2rem;
-            }
-        }
-
-        /* Loading Animation */
-        .loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--dark-900);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s, visibility 0.5s;
-        }
-
-        .loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .loader-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(99, 102, 241, 0.2);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+      *{box-sizing:border-box;margin:0;padding:0}
+      :root{
+        --paper:#f6f5f1; --paper-2:#efece4; --ink:#1c2623; --ink-soft:#4b544f; --ink-dim:#6b736d;
+        --line:#e4e0d5; --line-soft:#ece8dd; --sage:#3d6b5b; --sage-deep:#2c5245; --sage-tint:#eaf0ec;
+        --card:#fffdf8; --radius:18px; --wrap:1080px;
+        --serif:'Instrument Serif',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+      }
+      html{scroll-behavior:smooth}
+      body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+      ::selection{background:var(--sage);color:var(--paper)}
+      a{color:inherit;text-decoration:none}
+      .wrap{max-width:var(--wrap);margin-inline:auto;padding-inline:1.5rem}
+      em{font-family:var(--serif);font-style:italic;color:var(--sage)}
+      .eyebrow{font:500 .75rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--sage-deep);display:inline-flex;align-items:center;gap:.55rem}
+      .dot{width:7px;height:7px;border-radius:50%;background:var(--sage);box-shadow:0 0 0 4px var(--sage-tint)}
+
+      /* nav */
+      .top{position:sticky;top:0;z-index:50;background:rgba(246,245,241,.82);backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s}
+      .top.stuck{border-color:var(--line);background:rgba(246,245,241,.94)}
+      .top__in{display:flex;align-items:center;justify-content:space-between;height:66px}
+      .brand{display:flex;align-items:center;gap:.6rem;font-weight:600;letter-spacing:-.01em}
+      .brand__mark{width:30px;height:30px;border-radius:9px;background:var(--sage);color:var(--paper);display:grid;place-items:center;font-family:var(--serif);font-size:1.1rem}
+      .nav{display:flex;align-items:center;gap:1.6rem}
+      .nav a{color:var(--ink-soft);font-size:.92rem;font-weight:500;transition:color .18s}
+      .nav a:hover{color:var(--ink)}
+      .burger{display:none;background:none;border:0;cursor:pointer;width:40px;height:40px}
+      .burger span,.burger span::before,.burger span::after{content:"";display:block;width:20px;height:1.5px;background:var(--ink);position:relative;transition:.2s}
+      .burger span::before{position:absolute;top:-6px}.burger span::after{position:absolute;top:6px}
+
+      .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:999px;font-weight:600;font-size:.92rem;padding:.72rem 1.3rem;border:1px solid transparent;cursor:pointer;transition:transform .18s,box-shadow .18s,background .18s,border-color .18s;white-space:nowrap}
+      .btn svg{width:17px;height:17px}
+      .btn--primary{background:var(--sage);color:var(--paper);box-shadow:0 10px 26px -14px rgba(44,82,69,.9)}
+      .btn--primary:hover{background:var(--sage-deep);transform:translateY(-2px)}
+      .btn--ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+      .btn--ghost:hover{border-color:var(--sage);color:var(--sage-deep);transform:translateY(-2px)}
+      .btn--sm{padding:.5rem 1rem;font-size:.86rem}
+
+      /* hero */
+      .hero{padding:5.5rem 0 4rem;text-align:center;position:relative;overflow:hidden}
+      .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px 300px at 50% -10%,var(--sage-tint),transparent 70%);pointer-events:none}
+      .hero__in{position:relative;max-width:760px;margin-inline:auto}
+      .hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(2.6rem,6vw,4.4rem);line-height:1.04;letter-spacing:-.01em;margin:1.3rem 0}
+      .hero .lead{color:var(--ink-soft);font-size:clamp(1.05rem,2.1vw,1.2rem);max-width:56ch;margin:0 auto 2rem}
+      .hero__cta{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+      .hero__meta{display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;margin-top:2.2rem;color:var(--ink-dim);font:500 .8rem/1 var(--mono);letter-spacing:.04em}
+      .hero__meta span{display:inline-flex;align-items:center;gap:.45rem}
+      .hero__meta b{color:var(--sage-deep);font-weight:600}
+
+      /* sections */
+      section{padding:4.5rem 0}
+      .sec-head{max-width:620px;margin:0 auto 3rem;text-align:center}
+      .sec-head h2{font-family:var(--serif);font-weight:400;font-size:clamp(2rem,4vw,3rem);line-height:1.1;margin:.8rem 0 .6rem}
+      .sec-head p{color:var(--ink-soft)}
+
+      /* features */
+      .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+      .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.5rem;transition:transform .2s,border-color .2s,box-shadow .2s}
+      .card:hover{transform:translateY(-3px);border-color:var(--sage);box-shadow:0 18px 40px -28px rgba(28,38,35,.4)}
+      .card__ico{width:40px;height:40px;border-radius:11px;background:var(--sage-tint);color:var(--sage-deep);display:grid;place-items:center;margin-bottom:1rem}
+      .card__ico svg{width:20px;height:20px}
+      .card h3{font-size:1.08rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.4rem}
+      .card p{color:var(--ink-soft);font-size:.92rem;line-height:1.55}
+
+      /* how it works */
+      .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem;counter-reset:s}
+      .step{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.8rem 1.5rem;position:relative}
+      .step__n{counter-increment:s;font-family:var(--serif);font-size:2.4rem;color:var(--sage);line-height:1;display:block;margin-bottom:.8rem}
+      .step__n::before{content:"0" counter(s)}
+      .step h3{font-size:1.1rem;font-weight:600;margin-bottom:.4rem}
+      .step p{color:var(--ink-soft);font-size:.92rem}
+      .steps__line{display:none}
+
+      /* cta band */
+      .band{background:var(--ink);color:var(--paper);border-radius:26px;padding:3.4rem 2rem;text-align:center;position:relative;overflow:hidden}
+      .band::before{content:"";position:absolute;inset:0;background:radial-gradient(500px 240px at 50% 120%,rgba(127,224,184,.14),transparent 70%)}
+      .band h2{position:relative;font-family:var(--serif);font-weight:400;font-size:clamp(1.9rem,4vw,2.8rem);line-height:1.12;margin-bottom:.8rem}
+      .band p{position:relative;color:#c9d2cc;max-width:48ch;margin:0 auto 1.8rem}
+      .band em{color:#7fe0b8}
+      .band .btn--primary{position:relative;background:#7fe0b8;color:#0d1713;box-shadow:none}
+      .band .btn--primary:hover{background:#9bead0}
+
+      /* faq */
+      .faq{max-width:760px;margin-inline:auto;display:flex;flex-direction:column;gap:.7rem}
+      details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0 1.3rem;transition:border-color .2s}
+      details[open]{border-color:var(--sage)}
+      summary{list-style:none;cursor:pointer;font-weight:600;font-size:1rem;padding:1.15rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+      summary::-webkit-details-marker{display:none}
+      summary .pm{flex:none;width:22px;height:22px;position:relative;transition:transform .2s;color:var(--sage)}
+      summary .pm::before,summary .pm::after{content:"";position:absolute;background:currentColor;border-radius:2px}
+      summary .pm::before{top:10px;left:4px;width:14px;height:2px}
+      summary .pm::after{top:4px;left:10px;width:2px;height:14px;transition:opacity .2s}
+      details[open] summary .pm::after{opacity:0}
+      details p{color:var(--ink-soft);font-size:.94rem;padding:0 0 1.2rem;max-width:60ch}
+
+      /* footer */
+      .foot{border-top:1px solid var(--line);padding:2.5rem 0;margin-top:2rem}
+      .foot__in{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;color:var(--ink-dim);font-size:.88rem}
+      .foot nav{display:flex;gap:1.3rem;flex-wrap:wrap}
+      .foot nav a{color:var(--ink-soft);transition:color .18s}
+      .foot nav a:hover{color:var(--sage-deep)}
+
+      @media(max-width:860px){
+        .grid,.steps{grid-template-columns:1fr 1fr}
+      }
+      @media(max-width:620px){
+        .nav{position:fixed;inset:66px 0 auto;flex-direction:column;align-items:flex-start;gap:0;background:var(--paper);border-bottom:1px solid var(--line);padding:1rem 1.5rem 1.5rem;transform:translateY(-130%);transition:transform .25s;height:auto}
+        .nav.open{transform:translateY(0)}
+        .nav a{padding:.7rem 0;width:100%;border-bottom:1px solid var(--line-soft)}
+        .nav .btn{margin-top:.8rem}
+        .burger{display:block}
+        .grid,.steps{grid-template-columns:1fr}
+      }
+      @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto}}
     </style>
-</head>
-<body>
-    <!-- Loading Screen -->
-    <div class="loader" id="loader">
-        <div class="loader-spinner"></div>
-    </div>
+  </head>
+  <body>
+    <header class="top" id="top">
+      <div class="wrap top__in">
+        <a class="brand" href="#top" aria-label="PO Translator, home">
+          <span class="brand__mark" aria-hidden="true">P</span><span>PO Translator</span>
+        </a>
+        <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span></button>
+        <nav class="nav" id="nav" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#faq">FAQ</a>
+          <a href="https://github.com/K11E3R/odoo_translator" target="_blank" rel="noopener">GitHub</a>
+          <a class="btn btn--primary btn--sm" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">Download</a>
+        </nav>
+      </div>
+    </header>
 
-    <!-- Animated Background -->
-    <div class="bg-animation">
-        <div class="gradient-mesh"></div>
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-        <div class="gradient-orb orb-3"></div>
-        <div class="particles" id="particles"></div>
-    </div>
-
-    <!-- Navigation -->
-    <nav id="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <span class="logo-icon">⚡</span>
-                <span>PO Translator</span>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#faq">FAQ</a></li>
-                <li><a href="https://github.com/K11E3R/odoo_translator" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-                <li><a href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe" class="nav-cta" download="POTranslator.exe">Download Free</a></li>
-            </ul>
-            <button class="mobile-menu-btn">☰</button>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span class="hero-badge-dot"></span>
-                <span>100% Free & Open Source</span>
-            </div>
-            
-            <h1>
-                AI-Powered Translation<br>
-                for <span class="hero-gradient-text">Odoo Developers</span>
-            </h1>
-            
-            <p class="hero-subtitle">
-                Fast, intelligent translation tool for Odoo .po files. Works online with Gemini AI 
-                or completely offline with built-in glossaries. Translate hundreds of entries in minutes.
-            </p>
-            
-            <div class="hero-buttons">
-                <a href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe" class="btn btn-primary" download="POTranslator.exe">
-                    <span>📥 Download v1.0 (EXE)</span>
-                </a>
-                <a href="https://github.com/K11E3R/odoo_translator/releases/latest" class="btn btn-secondary">
-                    <span>📖 View Releases</span>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Stats -->
-    <section class="stats">
-        <div class="stats-grid">
-            <div class="stat-item">
-                <span class="stat-number">8+</span>
-                <span class="stat-label">Languages</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-number">90%</span>
-                <span class="stat-label">Cache Hit Rate</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-number">~10/s</span>
-                <span class="stat-label">Requests Speed</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-number">100%</span>
-                <span class="stat-label">Free Forever</span>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-badge">Why Choose Us</div>
-                <h2 class="section-title">Powerful Features for Professionals</h2>
-                <p class="section-subtitle">
-                    Everything you need to translate Odoo modules efficiently and accurately
-                </p>
-            </div>
-            
-            <div class="features-grid">
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🤖</div>
-                    <h3>AI-Powered Translation</h3>
-                    <p>Google Gemini 2.5 Flash-Lite with Odoo-specific terminology for accurate, context-aware translations.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">📴</div>
-                    <h3>Offline Mode</h3>
-                    <p>Built-in glossaries for EN↔FR and EN↔ES work completely without internet connection.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Lightning Fast</h3>
-                    <p>70-90% cache hit rate means repeated translations are instant. Batch processing supported.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Smart Detection</h3>
-                    <p>95%+ accuracy in language detection using advanced ML models and heuristics.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🔒</div>
-                    <h3>Variable Preservation</h3>
-                    <p>Automatically preserves placeholders like %(name)s, %s, {x} to keep your code functional.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🎨</div>
-                    <h3>Modern UI</h3>
-                    <p>Beautiful dark theme interface built with CustomTkinter. Intuitive and professional.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">💾</div>
-                    <h3>Smart Caching</h3>
-                    <p>Local cache stores translations for instant reuse across all your projects.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">📊</div>
-                    <h3>Detailed Analytics</h3>
-                    <p>Track API usage, cache performance, errors, and corrections in real-time.</p>
-                </div>
-
-                <div class="feature-card animate-on-scroll">
-                    <div class="feature-icon">🔄</div>
-                    <h3>Batch Processing</h3>
-                    <p>Import multiple .po files, translate hundreds of entries, export with one click.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Interactive Interface Tour -->
-    <section class="screenshot-section">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-badge">Interactive Tour</div>
-                <h2 class="section-title">Explore Every Feature</h2>
-                <p class="section-subtitle">
-                    Hover over any area to discover powerful features and how they work
-                </p>
-            </div>
-            
-            <!-- Interactive Interface -->
-            <div class="interactive-interface-container animate-on-scroll">
-                <div class="tour-hint">Hover over any feature to explore</div>
-                <div class="interface-wrapper">
-                    <img src="https://raw.githubusercontent.com/K11E3R/odoo_translator/main/docs/screenshots/main-interface.png" 
-                         alt="PO Translator Interface"
-                         class="interface-image"
-                         id="interfaceImage">
-                    
-                    <!-- Hover Zones - Exact Positions -->
-                    <!-- Sidebar - Left Panel -->
-                    <div class="hover-zone" data-feature="import" style="top: 15.5%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="save" style="top: 20.3%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="export" style="top: 25.1%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="api-key" style="top: 34%; left: 1.3%; width: 17%; height: 7%;"></div>
-                    <div class="hover-zone" data-feature="language-select" style="top: 41.5%; left: 1.3%; width: 17%; height: 9%;"></div>
-                    <div class="hover-zone" data-feature="translate-all" style="top: 49%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="translate-selected" style="top: 53.8%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="undo-redo" style="top: 61.2%; left: 1.3%; width: 17%; height: 4.5%;"></div>
-                    <div class="hover-zone" data-feature="delete-selected" style="top: 65.8%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="statistics" style="top: 70.1%; left: 1.3%; width: 17%; height: 4.2%;"></div>
-                    <div class="hover-zone" data-feature="statistics-panel" style="top: 74.5%; left: 1.3%; width: 17%; height: 17%;"></div>
-                    
-                    <!-- Top Bar - Search, Filters, Actions -->
-                    <div class="hover-zone" data-feature="search" style="top: 2.5%; left: 21.5%; width: 32%; height: 3.5%;"></div>
-                    <div class="hover-zone" data-feature="filters" style="top: 2.5%; left: 54%; width: 23%; height: 3.5%;"></div>
-                    <div class="hover-zone" data-feature="select-actions" style="top: 2.5%; left: 78%; width: 20%; height: 3.5%;"></div>
-                    
-                    <!-- Table Headers -->
-                    <div class="hover-zone" data-feature="table-headers" style="top: 6%; left: 20%; width: 78.5%; height: 3%;"></div>
-                    
-                    <!-- Main Content Area -->
-                    <div class="hover-zone" data-feature="main-content" style="top: 9%; left: 20%; width: 78.5%; height: 83%;"></div>
-                    
-                    <!-- Pagination -->
-                    <div class="hover-zone" data-feature="pagination" style="top: 93%; left: 20%; width: 58%; height: 4%;"></div>
-                    <div class="hover-zone" data-feature="items-per-page" style="top: 93%; left: 79%; width: 10%; height: 4%;"></div>
-                    <div class="hover-zone" data-feature="clear-selection-btn" style="top: 93%; left: 90%; width: 9%; height: 4%;"></div>
-                </div>
-                
-                <!-- Feature Tooltip -->
-                <div class="feature-tooltip" id="featureTooltip">
-                    <div class="tooltip-arrow" id="tooltipArrow"></div>
-                    <div class="tooltip-header">
-                        <span class="tooltip-icon" id="tooltipIcon">⚡</span>
-                        <h3 class="tooltip-title" id="tooltipTitle">Feature Name</h3>
-                    </div>
-                    <p class="tooltip-description" id="tooltipDescription">Feature description</p>
-                    <div class="tooltip-details" id="tooltipDetails"></div>
-                    <div class="tooltip-tech" id="tooltipTech"></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section id="how-it-works">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-badge">Simple Process</div>
-                <h2 class="section-title">How It Works</h2>
-                <p class="section-subtitle">
-                    Get started in 3 simple steps
-                </p>
-            </div>
-            
-            <div class="steps-grid">
-                <div class="step-card animate-on-scroll">
-                    <div class="step-number">1</div>
-                    <h3>Import Files</h3>
-                    <p>Select .po files from your Odoo module. Files are automatically merged and deduplicated.</p>
-                </div>
-
-                <div class="step-card animate-on-scroll">
-                    <div class="step-number">2</div>
-                    <h3>Configure & Translate</h3>
-                    <p>Set languages and translate all or selected entries. Works online or offline!</p>
-                </div>
-
-                <div class="step-card animate-on-scroll">
-                    <div class="step-number">3</div>
-                    <h3>Export & Deploy</h3>
-                    <p>Export translated .po/.mo files and copy back to your Odoo module.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA -->
-    <section class="cta-section">
-        <div class="cta-content">
-            <h2>Ready to Speed Up Your Translations?</h2>
-            <p>Download for free and start translating Odoo modules in minutes</p>
-            <a href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe" class="btn" download="POTranslator.exe">
-                <span>📥 Download v1.0 (EXE) - It's Free!</span>
+    <main>
+      <section class="hero">
+        <div class="wrap hero__in">
+          <p class="eyebrow"><span class="dot"></span>100% free &amp; open source</p>
+          <h1>AI-powered translation <br />for <em>Odoo developers</em></h1>
+          <p class="lead">Fast, intelligent translation for Odoo <code>.po</code> files. Works online with Gemini AI or completely offline with built-in glossaries — translate hundreds of entries in minutes.</p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
+              Download v1.0 (EXE)
             </a>
+            <a class="btn btn--ghost" href="https://github.com/K11E3R/odoo_translator/releases/latest" target="_blank" rel="noopener">View releases</a>
+          </div>
+          <div class="hero__meta">
+            <span><b>MIT</b> licensed</span>
+            <span><b>Windows</b> .exe</span>
+            <span><b>Gemini AI</b> + offline</span>
+          </div>
         </div>
-    </section>
+      </section>
 
-    <!-- FAQ -->
-    <section id="faq">
-        <div class="container">
-            <div class="section-header">
-                <div class="section-badge">Got Questions?</div>
-                <h2 class="section-title">Frequently Asked Questions</h2>
-            </div>
-            
-            <div class="faq-container">
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Is PO Translator really free?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        Yes! 100% free and open source under MIT license. Use it for personal or commercial projects without any cost.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Do I need an API key?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        For online AI translation, you need a free Google Gemini API key. For offline mode, no API key needed!
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Which languages are supported?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        English, French, Spanish, German, Italian, Portuguese, Dutch, and Arabic. Offline mode works for EN↔FR and EN↔ES.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Can I use it offline?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        Yes! Enable "Offline mode" to use built-in glossaries for English↔French and English↔Spanish without internet.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>How accurate are translations?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        ~95% accurate for Odoo-specific terminology. Always review translations before production deployment.
-                    </div>
-                </div>
-
-                <div class="faq-item">
-                    <div class="faq-question">
-                        <span>Can I contribute?</span>
-                        <span class="faq-icon">+</span>
-                    </div>
-                    <div class="faq-answer">
-                        Absolutely! Check the GitHub repository for issues and contribution guidelines. We welcome all contributions!
-                    </div>
-                </div>
-            </div>
+      <section id="features">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Features</p>
+            <h2>Powerful features for <em>professionals</em></h2>
+            <p>Everything you need to localize an Odoo module quickly, accurately and without breaking your code.</p>
+          </div>
+          <div class="grid" id="feat-grid"></div>
         </div>
-    </section>
+      </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4>PO Translator</h4>
-                <p style="color: var(--text-secondary); line-height: 1.9;">
-                    AI-powered translation tool for Odoo developers. Fast, intelligent, and completely free.
-                </p>
-            </div>
-
-            <div class="footer-section">
-                <h4>Product</h4>
-                <ul class="footer-links">
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#how-it-works">How It Works</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe" download="POTranslator.exe">Download v1.0</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator#readme">Documentation</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Resources</h4>
-                <ul class="footer-links">
-                    <li><a href="https://github.com/K11E3R/odoo_translator">GitHub</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/issues">Support</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/blob/main/CHANGELOG.md">Changelog</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/blob/main/LICENSE">License</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Connect</h4>
-                <ul class="footer-links">
-                    <li><a href="https://github.com/K11E3R">GitHub Profile</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/stargazers">Star on GitHub</a></li>
-                    <li><a href="https://github.com/K11E3R/odoo_translator/fork">Fork Project</a></li>
-                </ul>
-                <div class="social-links">
-                    <a href="https://github.com/K11E3R/odoo_translator" class="social-link" title="GitHub" target="_blank" rel="noopener noreferrer">
-                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-                        </svg>
-                    </a>
-                </div>
-            </div>
+      <section id="how" style="background:var(--paper-2)">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow" style="justify-content:center"><span class="dot"></span>How it works</p>
+            <h2>Three steps, start to <em>finish</em></h2>
+            <p>From raw <code>.po</code> files to deployed translations in a single, simple flow.</p>
+          </div>
+          <div class="steps" id="steps"></div>
         </div>
+      </section>
 
-        <div class="footer-bottom">
-            <p>Made with ❤️ for Odoo developers worldwide</p>
-            <p style="margin-top: 0.8rem;">© 2025 PO Translator • Open source under MIT License</p>
+      <section>
+        <div class="wrap">
+          <div class="band">
+            <h2>Ready to speed up your <em>translations?</em></h2>
+            <p>Join Odoo developers translating hundreds of entries in minutes. Free, open source, and yours to keep.</p>
+            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">Download v1.0 — it's free</a>
+          </div>
         </div>
+      </section>
+
+      <section id="faq">
+        <div class="wrap">
+          <div class="sec-head">
+            <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Got questions?</p>
+            <h2>Frequently asked <em>questions</em></h2>
+          </div>
+          <div class="faq" id="faq-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot__in">
+        <span>© <span id="yr">2026</span> Yassine Naanani · Alençon, France</span>
+        <nav aria-label="Footer">
+          <a href="https://k11e3r.github.io/">Portfolio</a>
+          <a href="https://github.com/K11E3R/odoo_translator" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/K11E3R/odoo_translator/releases/latest" target="_blank" rel="noopener">Releases</a>
+          <a href="https://neurvexia.com" target="_blank" rel="noopener">Neurvexia</a>
+        </nav>
+      </div>
     </footer>
 
     <script>
-        // Loading Screen
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('hidden');
-            }, 500);
-        });
+      (function(){
+        var top=document.getElementById('top');
+        addEventListener('scroll',function(){top.classList.toggle('stuck',scrollY>8)},{passive:true});
+        var b=document.querySelector('.burger'),n=document.getElementById('nav');
+        b.addEventListener('click',function(){var o=n.classList.toggle('open');b.setAttribute('aria-expanded',String(o))});
+        n.addEventListener('click',function(e){if(e.target.tagName==='A'){n.classList.remove('open');b.setAttribute('aria-expanded','false')}});
+        document.getElementById('yr').textContent=new Date().getFullYear();
 
-        // Advanced Particles
-        const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 80; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.animationDuration = (Math.random() * 15 + 15) + 's';
-            particle.style.animationDelay = Math.random() * 10 + 's';
-            particlesContainer.appendChild(particle);
-        }
-
-        // Navbar scroll effect with parallax
-        const navbar = document.getElementById('navbar');
-        let lastScroll = 0;
-        
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.pageYOffset;
-            
-            if (currentScroll > 100) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-            
-            lastScroll = currentScroll;
-        });
-
-        // Advanced Scroll Animations with Intersection Observer
-        const observerOptions = {
-            threshold: 0.15,
-            rootMargin: '0px 0px -100px 0px'
+        var ic={
+          ai:'<path d="M12 3a4 4 0 0 1 4 4 4 4 0 0 1 0 8 4 4 0 0 1-8 0 4 4 0 0 1 0-8 4 4 0 0 1 4-4Z"/><path d="M12 7v4l2 2"/>',
+          off:'<path d="M3 12a9 9 0 0 1 9-9m9 9a9 9 0 0 1-9 9"/><path d="M3 12h4m10 0h4"/><path d="m5 5 14 14"/>',
+          fast:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+          detect:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+          var:'<path d="M8 3H6a2 2 0 0 0-2 2v4m0 6v4a2 2 0 0 0 2 2h2m8-18h2a2 2 0 0 1 2 2v4m0 6v4a2 2 0 0 1-2 2h-2"/>',
+          ui:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6" cy="6.5" r=".6" fill="currentColor"/>',
+          cache:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+          chart:'<path d="M4 20V10M10 20V4m6 16v-8m6 8V8"/>',
+          batch:'<rect x="3" y="4" width="14" height="14" rx="2"/><path d="M7 20h11a2 2 0 0 0 2-2V8"/>'
         };
+        var feats=[
+          ['ai','AI-powered translation','Google Gemini 2.5 Flash-Lite with Odoo-specific terminology for accurate, context-aware translations.'],
+          ['off','Offline mode','Built-in glossaries for EN↔FR and EN↔ES work completely without an internet connection.'],
+          ['fast','Lightning fast','70–90% cache hit rate means repeated translations are instant. Batch processing supported.'],
+          ['detect','Smart detection','95%+ accuracy in language detection using advanced ML models and heuristics.'],
+          ['var','Variable preservation','Automatically preserves placeholders like %(name)s, %s and {x} to keep your code functional.'],
+          ['ui','Modern UI','A clean, professional interface built with CustomTkinter — intuitive from the first run.'],
+          ['cache','Smart caching','A local cache stores translations for instant reuse across all your projects.'],
+          ['chart','Detailed analytics','Track API usage, cache performance, errors and corrections in real time.'],
+          ['batch','Batch processing','Import multiple .po files, translate hundreds of entries, and export with one click.']
+        ];
+        document.getElementById('feat-grid').innerHTML=feats.map(function(f){
+          return '<article class="card"><div class="card__ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+ic[f[0]]+'</svg></div><h3>'+f[1]+'</h3><p>'+f[2]+'</p></article>';
+        }).join('');
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('animated');
-                    // Add stagger effect for grids
-                    if (entry.target.parentElement.classList.contains('features-grid')) {
-                        const cards = entry.target.parentElement.querySelectorAll('.feature-card');
-                        cards.forEach((card, index) => {
-                            setTimeout(() => {
-                                card.classList.add('animated');
-                            }, index * 100);
-                        });
-                    }
-                }
-            });
-        }, observerOptions);
+        var steps=[
+          ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.'],
+          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.'],
+          ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.']
+        ];
+        document.getElementById('steps').innerHTML=steps.map(function(s){
+          return '<div class="step"><span class="step__n"></span><h3>'+s[0]+'</h3><p>'+s[1]+'</p></div>';
+        }).join('');
 
-        document.querySelectorAll('.animate-on-scroll').forEach(el => {
-            observer.observe(el);
-        });
-
-        // Parallax effect for hero
-        window.addEventListener('scroll', () => {
-            const scrolled = window.pageYOffset;
-            const hero = document.querySelector('.hero-content');
-            if (hero && scrolled < window.innerHeight) {
-                hero.style.transform = `translateY(${scrolled * 0.3}px)`;
-                hero.style.opacity = 1 - (scrolled / window.innerHeight);
-            }
-        });
-
-        // FAQ accordion with smooth animation
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.addEventListener('click', () => {
-                const item = question.parentElement;
-                const wasActive = item.classList.contains('active');
-                
-                document.querySelectorAll('.faq-item').forEach(i => {
-                    i.classList.remove('active');
-                });
-                
-                if (!wasActive) {
-                    item.classList.add('active');
-                }
-            });
-        });
-
-        // Smooth scroll with offset
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    const offsetTop = target.offsetTop - 80;
-                    window.scrollTo({
-                        top: offsetTop,
-                        behavior: 'smooth'
-                    });
-                }
-            });
-        });
-
-        // Mouse parallax effect
-        document.addEventListener('mousemove', (e) => {
-            const orbs = document.querySelectorAll('.gradient-orb');
-            const mouseX = e.clientX / window.innerWidth;
-            const mouseY = e.clientY / window.innerHeight;
-            
-            orbs.forEach((orb, index) => {
-                const speed = (index + 1) * 0.5;
-                const x = (mouseX - 0.5) * speed * 50;
-                const y = (mouseY - 0.5) * speed * 50;
-                orb.style.transform = `translate(${x}px, ${y}px)`;
-            });
-        });
-
-        // Counter animation for stats
-        const animateCounter = (element, target) => {
-            const duration = 2000;
-            const increment = target / (duration / 16);
-            let current = 0;
-            
-            const updateCounter = () => {
-                current += increment;
-                if (current < target) {
-                    element.textContent = Math.floor(current) + (target.toString().includes('%') ? '%' : target.toString().includes('+') ? '+' : target.toString().includes('/') ? '/s' : '');
-                    requestAnimationFrame(updateCounter);
-                } else {
-                    element.textContent = target;
-                }
-            };
-            
-            updateCounter();
-        };
-
-        // Trigger counter when stats section is visible
-        const statsObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const statNumbers = entry.target.querySelectorAll('.stat-number');
-                    statNumbers.forEach(stat => {
-                        const text = stat.textContent;
-                        if (text.includes('+')) {
-                            animateCounter(stat, text);
-                        } else if (text.includes('%')) {
-                            animateCounter(stat, text);
-                        } else if (text.includes('/')) {
-                            animateCounter(stat, text);
-                        }
-                    });
-                    statsObserver.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.5 });
-
-        const statsSection = document.querySelector('.stats');
-        if (statsSection) {
-            statsObserver.observe(statsSection);
-        }
-
-        // Button ripple effect
-        document.querySelectorAll('.btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                const x = e.clientX - rect.left - size / 2;
-                const y = e.clientY - rect.top - size / 2;
-                
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = x + 'px';
-                ripple.style.top = y + 'px';
-                ripple.classList.add('ripple');
-                
-                this.appendChild(ripple);
-                
-                setTimeout(() => ripple.remove(), 600);
-            });
-        });
-
-        // Interactive Interface Tour
-        const featureData = {
-            'import': {
-                icon: '📁',
-                title: 'Import Files',
-                description: 'Load multiple .po files from your Odoo modules. Files are automatically merged and deduplicated.',
-                details: '<strong>Function:</strong> POMerger.merge()<br><strong>Shortcut:</strong> Ctrl+O<br><strong>Supports:</strong> Multiple file selection<br><strong>Format:</strong> .po files only',
-                tech: ['polib', 'File I/O', 'Merge Algorithm']
-            },
-            'save': {
-                icon: '💾',
-                title: 'Save',
-                description: 'Save your translated entries back to the original .po file with full metadata preservation.',
-                details: '<strong>Function:</strong> polib.pofile.save()<br><strong>Shortcut:</strong> Ctrl+S<br><strong>Preserves:</strong> Headers, metadata, comments<br><strong>Format:</strong> UTF-8 encoding',
-                tech: ['polib', 'Metadata', 'File Writing']
-            },
-            'export': {
-                icon: '📤',
-                title: 'Export',
-                description: 'Export translated files in various formats. Compile to .mo files for Odoo deployment.',
-                details: '<strong>Function:</strong> ExportDialog.export()<br><strong>Formats:</strong> .po, .mo<br><strong>Options:</strong> Custom filename, path selection<br><strong>Compilation:</strong> Automatic .mo generation',
-                tech: ['polib', 'Binary Compilation', 'Export']
-            },
-            'api-key': {
-                icon: '🔑',
-                title: 'API Key Configuration',
-                description: 'Secure storage of your Google Gemini API key for AI-powered translations. Key is encrypted and stored locally.',
-                details: '<strong>Storage:</strong> Encrypted local config<br><strong>Provider:</strong> Google Gemini 2.5 Flash-Lite<br><strong>Security:</strong> Never transmitted to third parties<br><strong>Optional:</strong> Works offline without key',
-                tech: ['Config Storage', 'Encryption', 'Gemini API']
-            },
-            'language-select': {
-                icon: '🌐',
-                title: 'Language Selection',
-                description: 'Choose source and target languages. Auto-detection analyzes your .po files and suggests optimal language pairs.',
-                details: '<strong>Detection:</strong> Lingua-py (93.3% accuracy)<br><strong>Supported:</strong> 8 languages (EN, FR, ES, DE, IT, PT, NL, AR)<br><strong>Auto-detect:</strong> Analyzes msgid content<br><strong>Fallback:</strong> Keyword-based heuristics',
-                tech: ['Lingua-py', 'Language Detection', 'Heuristics']
-            },
-            'translate-all': {
-                icon: '🤖',
-                title: 'Translate All',
-                description: 'AI-powered translation of all entries using Gemini 2.5 Flash-Lite. Processes entries in parallel for speed.',
-                details: '<strong>Engine:</strong> Gemini 2.5 Flash-Lite<br><strong>Speed:</strong> ~4s per entry, 4x parallel<br><strong>Cache:</strong> 70-90% hit rate<br><strong>Features:</strong> Variable preservation, Odoo glossary',
-                tech: ['Gemini API', 'Parallel Processing', 'Smart Caching']
-            },
-            'translate-selected': {
-                icon: '✅',
-                title: 'Translate Selected',
-                description: 'Translate only selected entries. Perfect for batch updates or selective translation workflows.',
-                details: '<strong>Selection:</strong> Multi-select support<br><strong>Batch:</strong> Process selected entries<br><strong>Use Case:</strong> Partial updates, corrections<br><strong>Shortcut:</strong> Ctrl+T',
-                tech: ['Selection API', 'Batch Processing', 'Selective Translation']
-            },
-            'undo-redo': {
-                icon: '↩️',
-                title: 'Undo & Redo',
-                description: 'Unlimited undo/redo operations. Track every change with a comprehensive history system.',
-                details: '<strong>Function:</strong> UndoManager.undo() / redo()<br><strong>History:</strong> Unlimited depth<br><strong>Operations:</strong> All actions tracked<br><strong>Shortcuts:</strong> Ctrl+Z / Ctrl+Y<br><strong>Memory:</strong> Efficient state management',
-                tech: ['UndoManager', 'State History', 'Command Pattern']
-            },
-            'delete-selected': {
-                icon: '🗑️',
-                title: 'Delete Selected',
-                description: 'Remove selected entries from the translation table. Useful for cleaning up unwanted entries.',
-                details: '<strong>Function:</strong> delete_selected_entries()<br><strong>Safety:</strong> Confirmation dialog<br><strong>Undo:</strong> Reversible action<br><strong>Selection:</strong> Works with multi-select',
-                tech: ['Entry Management', 'Undo Support', 'Confirmation Dialog']
-            },
-            'statistics': {
-                icon: '📊',
-                title: 'Statistics Dialog',
-                description: 'View detailed statistics about your translation project with charts and metrics.',
-                details: '<strong>Function:</strong> StatisticsDialog.show()<br><strong>Displays:</strong> Progress charts, cache stats, errors<br><strong>Real-time:</strong> Live data updates<br><strong>Export:</strong> Statistics reports',
-                tech: ['Statistics Engine', 'Data Visualization', 'Metrics']
-            },
-            'statistics-panel': {
-                icon: '📈',
-                title: 'Statistics Panel',
-                description: 'Real-time statistics showing translation progress, pending entries, and selection count.',
-                details: '<strong>Metrics:</strong> Total, Translated, Pending, Selected<br><strong>Updates:</strong> Real-time calculation<br><strong>Display:</strong> Live counters<br><strong>Colors:</strong> Status indicators',
-                tech: ['Real-time Updates', 'Counter Logic', 'State Tracking']
-            },
-            'search': {
-                icon: '🔍',
-                title: 'Search Translations',
-                description: 'Full-text search across all translations. Find entries instantly with live results.',
-                details: '<strong>Function:</strong> search_entries(query)<br><strong>Search:</strong> Source & translation text<br><strong>Shortcut:</strong> Ctrl+F<br><strong>Speed:</strong> Instant results<br><strong>Scope:</strong> All visible entries',
-                tech: ['Search Algorithm', 'Text Matching', 'Live Filtering']
-            },
-            'filters': {
-                icon: '🎯',
-                title: 'Status Filters',
-                description: 'Filter entries by translation status. Quickly isolate pending, translated, or all entries.',
-                details: '<strong>Function:</strong> apply_filter(status)<br><strong>Options:</strong> All, Translated, Pending<br><strong>Update:</strong> Instant table refresh<br><strong>Pagination:</strong> Works with filters<br><strong>Count:</strong> Shows filtered count',
-                tech: ['Filter Engine', 'State Management', 'UI Updates']
-            },
-            'select-actions': {
-                icon: '☑️',
-                title: 'Selection Actions',
-                description: 'Bulk select or clear all entries. Essential for batch operations and workflow management.',
-                details: '<strong>Select All:</strong> Ctrl+A<br><strong>Clear:</strong> Deselect all entries<br><strong>Function:</strong> toggle_selection()<br><strong>Display:</strong> Selected count in stats',
-                tech: ['Selection API', 'Bulk Operations', 'State Management']
-            },
-            'table-headers': {
-                icon: '📑',
-                title: 'Table Headers',
-                description: 'Column headers for Source Text, Translation, Module/Model/Field, and Actions. Defines the data structure.',
-                details: '<strong>Columns:</strong> 4 main columns<br><strong>Source Text:</strong> Original msgid<br><strong>Translation:</strong> Translated msgstr<br><strong>Module Info:</strong> Module, Model, Field path<br><strong>Actions:</strong> Edit, Delete icons',
-                tech: ['Table Structure', 'Column Layout', 'Data Display']
-            },
-            'main-content': {
-                icon: '📋',
-                title: 'Translation Table',
-                description: 'Main workspace displaying all translation entries with source text, translations, and metadata.',
-                details: '<strong>Function:</strong> update_table_display()<br><strong>Features:</strong> Inline editing, selection, sorting<br><strong>Pagination:</strong> 25/50/100/200/All per page<br><strong>Display:</strong> Module, Model, Field paths<br><strong>Empty State:</strong> Shows helpful prompts',
-                tech: ['CustomTkinter', 'Table Widget', 'Data Display']
-            },
-            'pagination': {
-                icon: '◀️▶️',
-                title: 'Page Navigation',
-                description: 'Navigate through large translation sets with Prev/Next controls. Shows current page info.',
-                details: '<strong>Function:</strong> change_page(direction)<br><strong>Controls:</strong> Prev / Next buttons<br><strong>Display:</strong> "Page X of Y"<br><strong>Status:</strong> "No entries to display" indicator',
-                tech: ['Pagination Logic', 'Navigation', 'State Management']
-            },
-            'items-per-page': {
-                icon: '🔢',
-                title: 'Items Per Page',
-                description: 'Adjust the number of entries displayed per page. Choose from 25, 50, 100, 200, or All.',
-                details: '<strong>Function:</strong> set_page_size(size)<br><strong>Options:</strong> 25, 50, 100, 200, All<br><strong>Default:</strong> 50 items<br><strong>Performance:</strong> Optimized for large datasets',
-                tech: ['Pagination', 'Performance', 'State Management']
-            },
-            'clear-selection-btn': {
-                icon: '🚫',
-                title: 'Clear Selection',
-                description: 'Deselect all selected entries in the table. Quick action for resetting your selection.',
-                details: '<strong>Function:</strong> clear_selection()<br><strong>Action:</strong> Deselects all rows<br><strong>Updates:</strong> Refreshes selection count<br><strong>Visual:</strong> Removes checkmarks',
-                tech: ['Selection API', 'State Reset', 'UI Update']
-            }
-        };
-
-        const interfaceContainer = document.querySelector('.interactive-interface-container');
-        if (interfaceContainer) {
-            const tooltip = document.getElementById('featureTooltip');
-            const tooltipArrow = document.getElementById('tooltipArrow');
-            const tooltipIcon = document.getElementById('tooltipIcon');
-            const tooltipTitle = document.getElementById('tooltipTitle');
-            const tooltipDescription = document.getElementById('tooltipDescription');
-            const tooltipDetails = document.getElementById('tooltipDetails');
-            const tooltipTech = document.getElementById('tooltipTech');
-            const interfaceImage = document.getElementById('interfaceImage');
-
-            let tooltipTimeout;
-
-            function showTooltip(zone, feature) {
-                clearTimeout(tooltipTimeout);
-                
-                const data = featureData[feature];
-                if (!data) return;
-
-                // Update tooltip content
-                tooltipIcon.textContent = data.icon;
-                tooltipTitle.textContent = data.title;
-                tooltipDescription.textContent = data.description;
-                tooltipDetails.innerHTML = data.details;
-                
-                // Clear and add tech badges
-                tooltipTech.innerHTML = '';
-                data.tech.forEach(tech => {
-                    const badge = document.createElement('span');
-                    badge.className = 'tech-badge';
-                    badge.textContent = tech;
-                    tooltipTech.appendChild(badge);
-                });
-
-                // Calculate position
-                const containerRect = interfaceContainer.getBoundingClientRect();
-                const zoneRect = zone.getBoundingClientRect();
-                const tooltipRect = tooltip.getBoundingClientRect();
-                
-                const zoneCenterX = zoneRect.left + zoneRect.width / 2 - containerRect.left;
-                const zoneCenterY = zoneRect.top + zoneRect.height / 2 - containerRect.top;
-                
-                // Determine arrow position based on zone location
-                let arrowPosition = 'left';
-                let tooltipX, tooltipY;
-                
-                if (zoneRect.left - containerRect.left < containerRect.width / 2) {
-                    // Zone on left, show tooltip on right
-                    arrowPosition = 'left';
-                    tooltipX = zoneRect.right - containerRect.left + 20;
-                    tooltipY = zoneCenterY - tooltipRect.height / 2;
-                } else {
-                    // Zone on right, show tooltip on left
-                    arrowPosition = 'right';
-                    tooltipX = zoneRect.left - containerRect.left - tooltipRect.width - 20;
-                    tooltipY = zoneCenterY - tooltipRect.height / 2;
-                }
-                
-                // Adjust if tooltip goes out of bounds vertically
-                const minY = 20;
-                const maxY = containerRect.height - tooltipRect.height - 20;
-                tooltipY = Math.max(minY, Math.min(tooltipY, maxY));
-                
-                // Check horizontal bounds
-                if (tooltipX < 0 || tooltipX + tooltipRect.width > containerRect.width - containerRect.left) {
-                    // Use top/bottom positioning
-                    if (zoneRect.top - containerRect.top < containerRect.height / 2) {
-                        arrowPosition = 'top';
-                        tooltipX = Math.max(20, Math.min(zoneCenterX - tooltipRect.width / 2, containerRect.width - tooltipRect.width - 20));
-                        tooltipY = zoneRect.bottom - containerRect.top + 20;
-                    } else {
-                        arrowPosition = 'bottom';
-                        tooltipX = Math.max(20, Math.min(zoneCenterX - tooltipRect.width / 2, containerRect.width - tooltipRect.width - 20));
-                        tooltipY = zoneRect.top - containerRect.top - tooltipRect.height - 20;
-                    }
-                }
-
-                // Set arrow position
-                tooltipArrow.className = 'tooltip-arrow ' + arrowPosition;
-                
-                // Position tooltip
-                tooltip.style.left = tooltipX + 'px';
-                tooltip.style.top = tooltipY + 'px';
-                
-                // Show tooltip
-                zone.classList.add('active');
-                tooltip.classList.add('visible');
-            }
-
-            function hideTooltip(zone) {
-                tooltipTimeout = setTimeout(() => {
-                    zone.classList.remove('active');
-                    tooltip.classList.remove('visible');
-                }, 100);
-            }
-
-            // Add event listeners to all hover zones
-            document.querySelectorAll('.hover-zone').forEach(zone => {
-                const feature = zone.getAttribute('data-feature');
-                
-                zone.addEventListener('mouseenter', () => {
-                    clearTimeout(tooltipTimeout);
-                    showTooltip(zone, feature);
-                });
-                
-                zone.addEventListener('mouseleave', () => {
-                    hideTooltip(zone);
-                });
-                
-                zone.addEventListener('mousemove', (e) => {
-                    clearTimeout(tooltipTimeout);
-                });
-            });
-
-            // Keep tooltip visible when hovering over it
-            tooltip.addEventListener('mouseenter', () => {
-                clearTimeout(tooltipTimeout);
-            });
-
-            tooltip.addEventListener('mouseleave', () => {
-                tooltip.classList.remove('visible');
-                document.querySelectorAll('.hover-zone').forEach(z => z.classList.remove('active'));
-            });
-        }
+        var faqs=[
+          ['Is PO Translator really free?','Yes — 100% free and open source under the MIT license. Use it for personal or commercial projects at no cost.'],
+          ['Do I need an API key?','For online AI translation you need a free Google Gemini API key. For offline mode, no API key is needed.'],
+          ['Which languages are supported?','English, French, Spanish, German, Italian, Portuguese, Dutch and Arabic. Offline mode works for EN↔FR and EN↔ES.'],
+          ['Can I use it offline?','Yes — enable “Offline mode” to use the built-in glossaries for English↔French and English↔Spanish without internet.'],
+          ['How accurate are translations?','~95% accurate for Odoo-specific terminology. Always review translations before deploying to production.'],
+          ['Can I contribute?','Absolutely — check the GitHub repository for issues and contribution guidelines. All contributions are welcome.']
+        ];
+        document.getElementById('faq-list').innerHTML=faqs.map(function(q){
+          return '<details><summary>'+q[0]+'<span class="pm" aria-hidden="true"></span></summary><p>'+q[1]+'</p></details>';
+        }).join('');
+      })();
     </script>
-</body>
+  </body>
 </html>
