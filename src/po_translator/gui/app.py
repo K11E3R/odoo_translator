@@ -473,9 +473,9 @@ class POTranslatorApp:
         
         # Apply filter
         if filter_type == "translated":
-            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None))]
+            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None), getattr(e, "msgid_plural", None))]
         elif filter_type == "untranslated":
-            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None))]
+            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None), getattr(e, "msgid_plural", None))]
         else:
             self.filtered_entries = base
 
@@ -578,7 +578,7 @@ class POTranslatorApp:
         seen_ids = set()
 
         for entry in self.entries:
-            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None)):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None), getattr(entry, "msgid_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
@@ -637,7 +637,7 @@ class POTranslatorApp:
         entries_to_translate: List = []
         seen_ids = set()
         for entry in selected:
-            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None)):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None), getattr(entry, "msgid_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
