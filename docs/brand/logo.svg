@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" role="img" aria-labelledby="title">
+<title id="title">Odoo PO Translator</title>
+<defs><style>.word{font:700 62px Inter,Arial,sans-serif;letter-spacing:-2px}.sub{font:400 25px Inter,Arial,sans-serif;letter-spacing:1px}</style></defs>
+<rect width="220" height="220" rx="48" fill="#111C29"/>
+<path d="M68 79c12-26 39-43 69-43 31 0 59 18 71 46" fill="none" stroke="#75E0B4" stroke-width="16" stroke-linecap="round"/>
+<path d="m194 55 25 26-36 8" fill="#75E0B4"/>
+<path d="M152 145c-12 26-39 43-69 43-31 0-59-18-71-46" fill="none" stroke="#2F8067" stroke-width="16" stroke-linecap="round"/>
+<path d="m26 169-25-26 36-8" fill="#2F8067"/>
+<path d="M76 86h68v23h-22v59H98v-59H76z" fill="#F6F5F1"/>
+<text x="270" y="101" class="word" fill="#173D34">Odoo PO Translator</text>
+<text x="274" y="151" class="sub" fill="#50635B">LOCALIZATION WORKBENCH FOR ODOO DEVELOPERS</text>
+</svg>
