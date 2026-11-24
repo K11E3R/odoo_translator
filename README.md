@@ -6,7 +6,7 @@
 
 A desktop workbench and command-line tool for reviewing and translating Odoo gettext \`.po\` files.
 
-**Project:** [GitHub](https://github.com/K11E3R/odoo_translator) · **Website:** [Project site](https://k11e3r.github.io/odoo_translator/) · **License:** MIT
+**Project:** [GitHub](https://github.com/K11E3R/odoo_translator) · **Website:** [Project site](https://k11e3r.github.io/odoo_translator/) · **License:** MIT · [Brand guide](docs/BRAND_GUIDE.md)
 
 > **Current scope:** online AI translation through Google's supported \`google-genai\` SDK, plus a small deterministic offline glossary for common English/French and English/Spanish Odoo terminology. The offline glossary is not a general-purpose machine-translation engine.
 
