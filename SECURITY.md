@@ -17,7 +17,7 @@ Please report vulnerabilities privately to the repository owner rather than publ
 
 ## Data handling
 
-- Online mode sends source strings to Google's Gemini API. Do not submit customer or confidential content unless your organisation has approved that data flow.
+- Online mode sends source strings to Google's Gemini API with `store=False`, disabling server-side interaction-history storage for these one-shot translations. Google's normal API processing and data policies still apply. Do not submit customer or confidential content unless your organisation has approved that data flow.
 - Offline glossary mode makes no translation API requests.
 - Language detection is local and does not download an external model at import time.
 - The translation cache is stored locally under \`~/.po_translator\`; remove it when disposing of a workstation or handling sensitive data.
