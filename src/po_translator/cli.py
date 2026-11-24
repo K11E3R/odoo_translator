@@ -95,7 +95,12 @@ def translate_file(args) -> int:
         if translator.auto_translate_entry(entry, force=args.force):
             translated += 1
         elif translator.get_stats()["failed_requests"] > before_failed:
-            failed += 1
+            # In glossary mode, an unknown phrase is intentionally left unchanged.
+            # Report it as skipped/unmatched rather than a broken file operation.
+            if translator.offline_mode:
+                skipped += 1
+            else:
+                failed += 1
         else:
             skipped += 1
 
