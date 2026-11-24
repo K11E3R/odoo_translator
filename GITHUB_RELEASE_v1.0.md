@@ -1,7 +1,9 @@
+> **Historical release notice (v1.0, October 2025).** This file records the original v1.0 announcement. Its feature and accuracy claims are not a current support contract. The v1.0 binary predates the reliability fixes on the current development branch. Consult the current [README](README.md) for the behavior and limitations of the maintained source.
+
 # 🚀 PO Translator v1.0 - Production Release
 
 **Release Date**: November 17, 2025  
-**Status**: Production Ready | **License**: MIT
+**Status at the time of release**: v1.0 historical release | **License**: MIT
 
 ---
 
@@ -15,13 +17,13 @@
 
 ### 🌟 Major Features
 
-- **100% Language Detection Accuracy** - Lingua-py integration with 93.3% raw accuracy, 100% with verification
+- **Language detection improvements (no universal accuracy guarantee)** - Lingua-py integration with 93.3% raw accuracy, 100% with verification
 - **Premium Dark Theme** - Luxury design with perfect contrast (WCAG AAA)
 - **Complete Metadata Preservation** - All PO file headers and 9 metadata fields preserved
 - **Enhanced Module Display** - Shows module, model type, and field paths
 - **Parallel Translation** - 4x faster with 4 concurrent API calls
 - **Smart Caching** - 100% hit rate on repeated phrases
-- **Offline Mode** - Works completely offline for EN↔FR and EN↔ES
+- **Offline Mode** - Provides a limited offline glossary for selected EN↔FR and EN↔ES phrases
 
 ### 🔧 Technical Improvements
 
