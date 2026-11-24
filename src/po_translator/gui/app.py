@@ -333,7 +333,7 @@ class POTranslatorApp:
             min_confidence=0.3,
             expected_language=expected_source  # Use expected source as hint
         )
-        missing_translation = is_untranslated(entry.msgid, entry.msgstr)
+        missing_translation = is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None))
 
         trans_lang, trans_conf = (None, 0.0)
         if not missing_translation and msgstr:
@@ -426,7 +426,7 @@ class POTranslatorApp:
     def update_stats(self):
         """Update statistics display"""
         total = len(self.filtered_entries)
-        translated = sum(1 for e in self.filtered_entries if not is_untranslated(e.msgid, e.msgstr))
+        translated = sum(1 for e in self.filtered_entries if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None)))
         selected = self.table.get_selected_count()
         
         self.sidebar.update_stats(total, translated, total - translated, selected)
