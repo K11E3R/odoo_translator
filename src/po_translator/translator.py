@@ -418,6 +418,10 @@ class Translator:
                 interaction = self.client.interactions.create(
                     model=self.model_name,
                     input=prompt,
+                    generation_config={
+                        "temperature": 0.1,
+                        "max_output_tokens": 1024,
+                    },
                     store=False,
                 )
                 translated = (getattr(interaction, "output_text", None) or "").strip()
