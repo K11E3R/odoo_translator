@@ -16,7 +16,7 @@ Un environnement de travail de bureau et une interface en ligne de commande pour
 - Interface de bureau CustomTkinter : recherche, filtres, pagination, édition, annulation/rétablissement et export.
 - Traduction Gemini avec le SDK Python Google Gen AI actuellement pris en charge.
 - Assistance par glossaire hors ligne pour des expressions et termes Odoo courants (EN↔FR et EN↔ES).
-- Détection de langue avec Lingua lorsqu'il est installé, sinon heuristiques locales.
+- Détection locale par heuristiques intégrées ; Lingua peut être installé en option pour améliorer la couverture.
 - Vérification des placeholders et du balisage avant d'accepter une traduction IA.
 - Cache thread-safe avec clés hachées et écritures atomiques.
 - Interface CLI : simulation, remplacement du fichier ou dossier de sortie.
@@ -38,6 +38,16 @@ pip install -e ".[dev]"
 \`\`\`
 
 Sous Windows PowerShell, activez l'environnement avec \`.venv\\Scripts\\Activate.ps1\`.
+
+### Détection de langue optionnelle
+
+Pour une détection locale plus riche, installez Lingua séparément :
+
+```bash
+pip install -e ".[language-detection]"
+```
+
+Sans cette option, l'application utilise ses heuristiques locales et ne télécharge pas de modèle de langue.
 
 ## Application de bureau
 
