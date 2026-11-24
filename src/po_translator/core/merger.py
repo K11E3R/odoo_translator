@@ -1,237 +1,158 @@
-"""PO file merger for combining multiple .po files"""
+"""PO file merger that preserves complete gettext entry identities."""
+from __future__ import annotations
+
+from pathlib import Path
+
 import polib
+
 from po_translator.core.cleaner import POCleaner
 from po_translator.core.indexer import ModuleIndexer
 from po_translator.utils.logger import get_logger
 
 
 class POMerger:
-    """Merge multiple PO files into one"""
-    
+    """Merge PO files without collapsing contexts or plural entries."""
+
     def __init__(self):
         self.cleaner = POCleaner()
         self.indexer = ModuleIndexer()
         self.merged_entries = {}
-        self.original_metadata = None  # Store original file metadata
-        self.original_header = None  # Store original file header comment
-        self.logger = get_logger('po_translator.merger')
-    
+        self.original_metadata = None
+        self.original_header = None
+        self.logger = get_logger("po_translator.merger")
+        self._entry_sources = {}
+
     def load_po_file(self, filepath):
-        """
-        Load a single PO file
-        
-        Args:
-            filepath: Path to .po file
-            
-        Returns:
-            polib.POFile: Loaded PO file or None if error
-        """
-        self.logger.info(f"Loading PO file: {filepath}")
+        self.logger.info("Loading PO file: %s", filepath)
         try:
-            po_file = polib.pofile(filepath)
-            self.logger.debug(f"  Loaded {len(po_file)} entries from {filepath}")
-            
-            # Preserve metadata from first file
+            po_file = polib.pofile(str(filepath))
+            self.logger.debug("Loaded %s entries from %s", len(po_file), filepath)
             if self.original_metadata is None and po_file.metadata:
                 self.original_metadata = dict(po_file.metadata)
-                self.logger.debug(f"  Preserved metadata: {len(self.original_metadata)} fields")
-            
-            # Preserve header comment from first file
             if self.original_header is None and po_file.header:
                 self.original_header = po_file.header
-                self.logger.debug(f"  Preserved header comment")
-            
             return po_file
-        except Exception as e:
-            self.logger.error(f"Error loading {filepath}: {e}")
-            print(f"Error loading {filepath}: {e}")
+        except (OSError, ValueError, UnicodeError) as exc:
+            self.logger.exception("Unable to load PO file %s", filepath)
             return None
-    
+
     def merge_files(self, filepaths):
-        """
-        Merge multiple PO files
-        
-        Args:
-            filepaths: List of paths to .po files
-            
-        Returns:
-            dict: Dictionary of merged entries {msgid: POEntry}
-        """
-        self.logger.info(f"Starting merge of {len(filepaths)} files")
+        self.logger.info("Merging %s PO file(s)", len(filepaths))
         self.merged_entries.clear()
         self.indexer.clear()
-        
+        self._entry_sources.clear()
+        self.original_metadata = None
+        self.original_header = None
         all_entries = []
-        
+
         for filepath in filepaths:
             po_file = self.load_po_file(filepath)
-            if not po_file:
+            if po_file is None:
                 continue
-            
-            entry_count = 0
             for entry in po_file:
                 if entry.obsolete:
                     continue
-                
-                # Pass entry object to extract module from comment
-                self.indexer.index_entry(entry.msgid, filepath, entry)
-                all_entries.append(entry)
-                entry_count += 1
-            
-            self.logger.debug(f"  Added {entry_count} entries from {filepath}")
-        
-        self.logger.info(f"Total entries before cleaning: {len(all_entries)}")
-        cleaned_entries = self.cleaner.clean_entries(all_entries)
-        self.logger.info(f"Total entries after cleaning: {len(cleaned_entries)}")
-        
-        duplicates = 0
-        for entry in cleaned_entries:
-            msgid = entry.msgid
-            
-            if msgid in self.merged_entries:
-                self.merged_entries[msgid] = self.cleaner.merge_entries(
-                    self.merged_entries[msgid], 
-                    entry
+                all_entries.append((entry, filepath))
+
+        for raw_entry, filepath in all_entries:
+            cleaned = self.cleaner.clean_entries([raw_entry])
+            if not cleaned:
+                continue
+            entry = cleaned[0]
+            key = self.cleaner.entry_key(entry)
+            self.indexer.index_entry(entry, filepath, entry)
+            self._entry_sources[key] = filepath
+            if key in self.merged_entries:
+                self.merged_entries[key] = self.cleaner.merge_entries(
+                    self.merged_entries[key], entry
                 )
-                duplicates += 1
             else:
-                self.merged_entries[msgid] = entry
-        
-        self.logger.info(f"Merged entries: {len(self.merged_entries)} unique (removed {duplicates} duplicates)")
+                self.merged_entries[key] = entry
+
+        self.logger.info("Merged %s distinct gettext entries", len(self.merged_entries))
         return self.merged_entries
-    
+
     def get_entries_list(self):
-        """
-        Get list of merged entries
-        
-        Returns:
-            list: List of POEntry objects
-        """
         return list(self.merged_entries.values())
-    
-    def get_entry(self, msgid):
-        """
-        Get specific entry by msgid
-        
-        Args:
-            msgid: Message ID
-            
-        Returns:
-            POEntry: Entry or None
-        """
-        return self.merged_entries.get(msgid)
-    
-    def update_entry(self, msgid, new_msgid=None, new_msgstr=None):
-        """
-        Update an entry
-        
-        Args:
-            msgid: Current message ID
-            new_msgid: New message ID (optional)
-            new_msgstr: New translation (optional)
-            
-        Returns:
-            bool: True if updated successfully
-        """
-        if msgid not in self.merged_entries:
-            return False
-        
-        entry = self.merged_entries[msgid]
-        
-        if new_msgstr is not None:
-            entry.msgstr = new_msgstr
-        
-        if new_msgid is not None and new_msgid != msgid:
-            self.merged_entries[new_msgid] = entry
-            entry.msgid = new_msgid
-            del self.merged_entries[msgid]
-            
-            old_module = self.indexer.get_module(msgid)
-            self.indexer.index_entry(new_msgid, f"addons/{old_module}/i18n/fr.po")
-        
-        return True
-    
-    def export_to_file(self, filepath, metadata=None):
-        """
-        Export merged entries to .po file with full metadata preservation
-        
-        Args:
-            filepath: Output path
-            metadata: Optional metadata dict (overrides original)
-            
-        Returns:
-            bool: True if successful
-        """
-        self.logger.info(f"Exporting to {filepath}")
-        try:
-            po_file = polib.POFile()
-            
-            # Use provided metadata, or original metadata, or defaults
-            if metadata:
-                po_file.metadata = metadata
-            elif self.original_metadata:
-                po_file.metadata = dict(self.original_metadata)
-                self.logger.debug(f"  Using original metadata ({len(self.original_metadata)} fields)")
-            else:
-                po_file.metadata = {
-                    'Project-Id-Version': 'Odoo Server 17.0',
-                    'Report-Msgid-Bugs-To': '',
-                    'POT-Creation-Date': '',
-                    'PO-Revision-Date': '',
-                    'Language-Team': '',
-                    'MIME-Version': '1.0',
-                    'Content-Type': 'text/plain; charset=UTF-8',
-                    'Content-Transfer-Encoding': '',
-                    'Plural-Forms': '',
-                    'Language': 'fr',
-                }
-                self.logger.debug("  Using default metadata")
-            
-            # Preserve header comment
-            if self.original_header:
-                po_file.header = self.original_header
-                self.logger.debug("  Preserved header comment")
-            
-            # Export entries
-            entries = self.cleaner.sort_entries(self.get_entries_list())
-            self.logger.debug(f"  Exporting {len(entries)} entries")
-            
-            for entry in entries:
-                po_file.append(entry)
-            
-            po_file.save(filepath)
-            self.logger.info(f"Successfully exported to {filepath}")
-            self.logger.info(f"  Metadata fields: {len(po_file.metadata)}")
-            self.logger.info(f"  Header: {'Yes' if po_file.header else 'No'}")
-            self.logger.info(f"  Entries: {len(po_file)}")
-            
-            return True
-        except Exception as e:
-            self.logger.error(f"Error exporting to {filepath}: {e}")
-            print(f"Error exporting to {filepath}: {e}")
-            return False
-    
-    def compile_mo(self, po_filepath, mo_filepath=None):
-        """
-        Compile .po to .mo file
-        
-        Args:
-            po_filepath: Path to .po file
-            mo_filepath: Output path for .mo (optional, defaults to same name)
-            
-        Returns:
-            bool: True if successful
-        """
-        try:
-            po_file = polib.pofile(po_filepath)
-            
-            if mo_filepath is None:
-                mo_filepath = po_filepath.replace('.po', '.mo')
-            
-            po_file.save_as_mofile(mo_filepath)
-            
-            return True
-        except Exception as e:
-            print(f"Error compiling to {mo_filepath}: {e}")
+
+    def get_entry(self, msgid, msgctxt=None, msgid_plural=None):
+        if isinstance(msgid, tuple):
+            return self.merged_entries.get(msgid)
+        if msgctxt is not None or msgid_plural is not None:
+            return self.merged_entries.get((msgctxt or "", msgid, msgid_plural or ""))
+        matches = [entry for entry in self.merged_entries.values() if entry.msgid == msgid]
+        return matches[0] if len(matches) == 1 else None
+
+    def update_entry(self, msgid, new_msgid=None, new_msgstr=None,
+                     msgctxt=None, msgid_plural=None):
+        """Update an entry and rebuild identity-dependent indexes safely."""
+        entry = msgid if hasattr(msgid, "msgid") else self.get_entry(msgid, msgctxt, msgid_plural)
+        if entry is None:
             return False
 
+        old_key = self.cleaner.entry_key(entry)
+        new_identity = (
+            old_key[0],
+            entry.msgid if new_msgid is None else new_msgid,
+            old_key[2],
+        )
+        collision = self.merged_entries.get(new_identity)
+        if new_identity != old_key and collision is not None and collision is not entry:
+            return False
+
+        old_source = self._entry_sources.pop(old_key, None)
+        if new_msgstr is not None:
+            entry.msgstr = new_msgstr
+        if new_msgid is not None:
+            entry.msgid = new_msgid
+
+        new_key = self.cleaner.entry_key(entry)
+        if new_key != old_key:
+            self.merged_entries.pop(old_key, None)
+            self.merged_entries[new_key] = entry
+        if old_source:
+            self._entry_sources[new_key] = old_source
+
+        # Rebuild all metadata indexes because their keys include the PO identity.
+        self.indexer.clear()
+        for key, indexed_entry in self.merged_entries.items():
+            source = self._entry_sources.get(key, "")
+            self.indexer.index_entry(indexed_entry, source, indexed_entry)
+        return True
+
+    def export_to_file(self, filepath, metadata=None):
+        try:
+            po_file = polib.POFile()
+            if metadata:
+                po_file.metadata = dict(metadata)
+            elif self.original_metadata:
+                po_file.metadata = dict(self.original_metadata)
+            else:
+                po_file.metadata = {
+                    "Project-Id-Version": "Odoo Server",
+                    "MIME-Version": "1.0",
+                    "Content-Type": "text/plain; charset=UTF-8",
+                    "Content-Transfer-Encoding": "8bit",
+                }
+            if self.original_header:
+                po_file.header = self.original_header
+            for entry in self.cleaner.sort_entries(self.get_entries_list()):
+                po_file.append(entry)
+            destination = Path(filepath)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            po_file.save(str(destination))
+            self.logger.info("Exported %s entries to %s", len(po_file), destination)
+            return True
+        except (OSError, ValueError, TypeError):
+            self.logger.exception("Unable to export PO file to %s", filepath)
+            return False
+
+    def compile_mo(self, po_filepath, mo_filepath=None):
+        try:
+            po_file = polib.pofile(str(po_filepath))
+            destination = mo_filepath or str(Path(po_filepath).with_suffix(".mo"))
+            po_file.save_as_mofile(str(destination))
+            return True
+        except (OSError, ValueError, TypeError):
+            self.logger.exception("Unable to compile PO file %s", po_filepath)
+            return False

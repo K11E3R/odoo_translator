@@ -71,7 +71,7 @@ class POTranslatorApp:
         
         # Window
         self.root = ctk.CTk()
-        self.root.title("PO Translator • Advanced Odoo Translation Tool")
+        self.root.title("Odoo PO Translator • Localization Workbench")
         self.root.geometry("1500x900")
 
         # Ensure window decorations are visible (for WSL/Linux)
@@ -112,12 +112,13 @@ class POTranslatorApp:
             'edit': self.edit_entry,
             'selection_changed': self.on_selection_changed,
             'language_changed': self.on_language_changed,
+            'offline_mode_changed': self.on_offline_mode_changed,
             'change_page': self.change_page,
             'change_page_size': self.change_page_size,
         }
         
         # Create components
-        self.sidebar = Sidebar(self.root, callbacks)
+        self.sidebar = Sidebar(self.root, callbacks, offline_mode=self.translator.offline_mode)
         self.sidebar.disable_file_buttons()
 
         # Content area
@@ -146,41 +147,45 @@ class POTranslatorApp:
         self.root.bind("<Delete>", lambda e: self.delete_selected())
     
     def load_config(self):
-        """Load saved configuration"""
-        config = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.config')
-        if os.path.exists(config):
-            try:
-                with open(config) as f:
-                    key = f.read().strip()
-                    if key:
-                        self.sidebar.api_key_entry.insert(0, key)
-                        self.translator.set_api_key(key)
-            except:
-                pass
-    
+        """Load an API key from the process environment only."""
+        key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if key:
+            self.translator.set_api_key(key)
+
+    def _translation_available(self):
+        """Offline glossary mode works without a Gemini client."""
+        return self.translator.offline_mode or self.translator.client is not None
+
+    def update_translation_availability(self):
+        if self.entries and self._translation_available():
+            self.sidebar.enable_translation_buttons()
+        else:
+            self.sidebar.disable_translation_buttons()
+
     def save_api_key(self):
-        """Save API key"""
+        """Activate a Gemini API key for this application session only."""
         key = self.sidebar.api_key_entry.get().strip()
         if not key:
-            messagebox.showerror("Error", "Please enter an API key")
+            messagebox.showerror("Error", "Enter a Gemini API key or enable offline glossary mode.")
             return
-        
-        config = os.path.join(os.path.dirname(__file__), '..', '..', '..', '.config')
-        try:
-            with open(config, 'w') as f:
-                f.write(key)
-        except:
-            pass
-        
-        self.translator.set_api_key(key)
-        self.apply_language_settings(show_status=False)
+        if not self.translator.set_api_key(key):
+            messagebox.showerror(
+                "Gemini unavailable",
+                "The Gemini client could not be initialized. Check the key and install google-genai>=2.0.0.",
+            )
+            return
+        self.update_translation_availability()
+        self.statusbar.set_status("Gemini API key activated for this session. It was not saved to disk.")
+        messagebox.showinfo("Gemini ready", "The API key is active for this session only.")
 
-        if self.entries:
-            self.sidebar.enable_translation_buttons()
+    def on_offline_mode_changed(self):
+        """Switch between local glossary and Gemini without changing the selected languages."""
+        settings = self.sidebar.get_language_settings()
+        self.translator.set_offline_mode(settings["offline_mode"])
+        self.update_translation_availability()
+        mode = "Offline glossary" if self.translator.offline_mode else "Gemini online"
+        self.statusbar.set_status(f"Translation mode: {mode}")
 
-        self.statusbar.set_status("✅ API key saved successfully")
-        messagebox.showinfo("Success", "API key saved! Translation features are now enabled.")
-    
     def import_files(self):
         """Import PO files with progress tracking"""
         if not self.confirm_discard_changes("to import new files"):
@@ -236,8 +241,7 @@ class POTranslatorApp:
         else:
             self.sidebar.disable_file_buttons()
 
-        if self.sidebar.api_key_entry.get().strip():
-            self.sidebar.enable_translation_buttons()
+        self.update_translation_availability()
 
         if not auto_configured:
             self.statusbar.set_status(f"✅ Imported {len(entries)} entries successfully")
@@ -293,7 +297,10 @@ class POTranslatorApp:
         expected_target = self.translator.target_lang
 
         msgid = (entry.msgid or "").strip()
+        plural_forms = getattr(entry, "msgstr_plural", None) or {}
         msgstr = (entry.msgstr or "").strip()
+        if not msgstr and plural_forms:
+            msgstr = next((value.strip() for value in plural_forms.values() if value and value.strip()), "")
 
         cached = self._language_analysis_cache.get(entry_id)
         if cached:
@@ -329,14 +336,19 @@ class POTranslatorApp:
             min_confidence=0.3,
             expected_language=expected_source  # Use expected source as hint
         )
-        missing_translation = is_untranslated(entry.msgid, entry.msgstr)
+        missing_translation = is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None), getattr(entry, "msgid_plural", None))
 
         trans_lang, trans_conf = (None, 0.0)
-        if not missing_translation and msgstr:
+        plural_sample = " ".join(
+            value for value in (getattr(entry, "msgstr_plural", {}) or {}).values()
+            if value and value.strip()
+        )
+        translation_sample = msgstr or plural_sample
+        if not missing_translation and translation_sample:
             # Use context for translation too, with expected target as hint
             trans_context = [msgid] + context_texts[:4] if context_texts else [msgid]
             trans_lang, trans_conf = detect_language_with_context(
-                msgstr,
+                translation_sample,
                 context_texts=trans_context,
                 min_confidence=0.3,
                 expected_language=expected_target  # Use expected target as hint
@@ -363,7 +375,7 @@ class POTranslatorApp:
 
         self._language_analysis_cache[entry_id] = (
             msgid,
-            msgstr,
+            translation_sample,
             expected_source,
             expected_target,
             status,
@@ -422,7 +434,7 @@ class POTranslatorApp:
     def update_stats(self):
         """Update statistics display"""
         total = len(self.filtered_entries)
-        translated = sum(1 for e in self.filtered_entries if not is_untranslated(e.msgid, e.msgstr))
+        translated = sum(1 for e in self.filtered_entries if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None), getattr(e, "msgid_plural", None)))
         selected = self.table.get_selected_count()
         
         self.sidebar.update_stats(total, translated, total - translated, selected)
@@ -441,7 +453,7 @@ class POTranslatorApp:
         else:
             self.filtered_entries = [
                 e for e in self.entries
-                if query in e.msgid.lower() or query in e.msgstr.lower()
+                if query in e.msgid.lower() or query in e.msgstr.lower() or any(query in value.lower() for value in getattr(e, "msgstr_plural", {}).values())
             ]
 
         self.current_page = 1
@@ -457,13 +469,13 @@ class POTranslatorApp:
         
         # Apply search
         if query:
-            base = [e for e in base if query in e.msgid.lower() or query in e.msgstr.lower()]
+            base = [e for e in base if query in e.msgid.lower() or query in e.msgstr.lower() or any(query in value.lower() for value in getattr(e, "msgstr_plural", {}).values())]
         
         # Apply filter
         if filter_type == "translated":
-            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr)]
+            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None), getattr(e, "msgid_plural", None))]
         elif filter_type == "untranslated":
-            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr)]
+            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None), getattr(e, "msgid_plural", None))]
         else:
             self.filtered_entries = base
 
@@ -519,7 +531,14 @@ class POTranslatorApp:
     def edit_entry(self, entry):
         """Edit entry"""
         def on_save(entry, old_msgid, old_msgstr, new_msgid, new_msgstr):
-            # Record undo
+            if not self.merger.update_entry(entry, new_msgid=new_msgid, new_msgstr=new_msgstr):
+                messagebox.showerror(
+                    "Duplicate gettext entry",
+                    "This edit would create an entry with an existing context, msgid and plural identity.",
+                )
+                return
+
+            # Record undo only after the merger accepts the new gettext identity.
             self.undo_manager.record('edit', {
                 'entry': entry,
                 'old_msgid': old_msgid,
@@ -527,9 +546,6 @@ class POTranslatorApp:
                 'new_msgid': new_msgid,
                 'new_msgstr': new_msgstr
             })
-            
-            entry.msgid = new_msgid
-            entry.msgstr = new_msgstr
             self.unsaved = True
             self.invalidate_language_analysis(entries=[entry])
             self.populate()
@@ -543,8 +559,8 @@ class POTranslatorApp:
             messagebox.showinfo("Translation in Progress", "Please wait for the current translation to finish.")
             return
 
-        if not self.translator.model:
-            messagebox.showerror("Error", "Please save your API key first")
+        if not self._translation_available():
+            messagebox.showerror("Translation unavailable", "Enter a Gemini API key or enable Offline glossary mode.")
             return
 
         self.apply_language_settings(show_status=False)
@@ -562,7 +578,7 @@ class POTranslatorApp:
         seen_ids = set()
 
         for entry in self.entries:
-            if is_untranslated(entry.msgid, entry.msgstr):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None), getattr(entry, "msgid_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
@@ -599,7 +615,7 @@ class POTranslatorApp:
             messagebox.showinfo("Translation in Progress", "Please wait for the current translation to finish.")
             return
 
-        if not self.translator.model:
+        if not self._translation_available():
             messagebox.showerror("Error", "Please save your API key first")
             return
         if self.table.get_selected_count() == 0:
@@ -621,7 +637,7 @@ class POTranslatorApp:
         entries_to_translate: List = []
         seen_ids = set()
         for entry in selected:
-            if is_untranslated(entry.msgid, entry.msgstr):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None), getattr(entry, "msgid_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
@@ -660,39 +676,47 @@ class POTranslatorApp:
         
         def worker():
             import concurrent.futures
-            from queue import Queue
-            
+
             total = len(entries_to_translate)
             completed = 0
-            progress_queue = Queue()
-            
+            translated = 0
+            failed = 0
+            before_failed = self.translator.get_stats().get("failed_requests", 0)
+
             def translate_entry(entry):
-                """Translate single entry"""
                 if not self.translating:
                     return False
-                module = self.merger.indexer.get_module(entry.msgid)
+                module = self.merger.indexer.get_module(entry)
                 return self.translator.auto_translate_entry(entry, module, force=force)
-            
-            # Use ThreadPoolExecutor for parallel translation (4 threads = 4x faster)
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-                futures = {executor.submit(translate_entry, entry): entry for entry in entries_to_translate}
-                
+                futures = [executor.submit(translate_entry, entry) for entry in entries_to_translate]
                 for future in concurrent.futures.as_completed(futures):
-                    if not self.translating:
-                        break
-                    
                     try:
-                        future.result()
-                    except Exception as e:
-                        self.logger.error(f"Translation error: {e}")
-                    
+                        if future.result():
+                            translated += 1
+                    except Exception:
+                        failed += 1
+                        self.logger.exception("Translation worker failed")
+
                     completed += 1
-                    progress = completed / total
+                    progress = completed / max(1, total)
                     percent = int(progress * 100)
                     self.root.after(0, lambda p=progress: self.statusbar.set_progress(p))
-                    self.root.after(0, lambda c=completed, t=total, pct=percent: 
-                                   self.statusbar.set_status(f"🌐 Translating: {c}/{t} ({pct}%)", True, f"{pct}%"))
-            
+                    self.root.after(
+                        0,
+                        lambda c=completed, t=total, pct=percent:
+                        self.statusbar.set_status(f"Translating: {c}/{t} ({pct}%)", True, f"{pct}%")
+                    )
+
+            after_failed = self.translator.get_stats().get("failed_requests", 0)
+            if not self.translator.offline_mode:
+                failed += max(0, after_failed - before_failed)
+            self._last_translation_results = {
+                "translated": translated,
+                "failed": min(failed, total - translated),
+                "skipped": max(0, total - translated - min(failed, total - translated)),
+            }
             self.root.after(0, lambda items=entries_to_translate: self.invalidate_language_analysis(items))
             self.root.after(0, self.on_translate)
         
@@ -702,20 +726,24 @@ class POTranslatorApp:
         """Translation complete"""
         self.translating = False
         self.populate()
-        self.sidebar.enable_translation_buttons()
-        self.statusbar.set_status("✅ Translation completed successfully!")
-        self.unsaved = True
-
-        # Show statistics
+        self.update_translation_availability()
+        results = getattr(self, "_last_translation_results", {"translated": 0, "failed": 0, "skipped": 0})
+        self.unsaved = results["translated"] > 0
         stats = self.translator.get_stats()
-        messagebox.showinfo(
-            "Translation Complete",
-            f"Translation finished!\n\n"
-            f"API Calls: {stats['api_calls']}\n"
-            f"Cache Hits: {stats['cache_hits']}\n"
-            f"Errors: {stats['errors']}\n"
-            f"Cache Hit Rate: {stats['cache_hit_rate']}"
+        summary = (
+            f"Translation finished.\n\n"
+            f"Translated: {results['translated']}\n"
+            f"Unmatched / skipped: {results['skipped']}\n"
+            f"Failed: {results['failed']}\n"
+            f"API calls: {stats['api_calls']}\n"
+            f"Offline glossary requests: {stats.get('offline_requests', 0)}\n"
+            f"Cache hits: {stats['cache_hits']}\n"
         )
+        self.statusbar.set_status(
+            f"Translation complete: {results['translated']} translated, "
+            f"{results['failed']} failed, {results['skipped']} unmatched."
+        )
+        messagebox.showinfo("Translation results", summary)
     
     def undo(self):
         """Undo last action"""
@@ -723,8 +751,11 @@ class POTranslatorApp:
         if action:
             if action['action'] == 'edit':
                 data = action['data']
-                data['entry'].msgid = data['old_msgid']
-                data['entry'].msgstr = data['old_msgstr']
+                self.merger.update_entry(
+                    data["entry"],
+                    new_msgid=data["old_msgid"],
+                    new_msgstr=data["old_msgstr"],
+                )
                 self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↶ Undone")
@@ -735,8 +766,11 @@ class POTranslatorApp:
         if action:
             if action['action'] == 'edit':
                 data = action['data']
-                data['entry'].msgid = data['new_msgid']
-                data['entry'].msgstr = data['new_msgstr']
+                self.merger.update_entry(
+                    data["entry"],
+                    new_msgid=data["new_msgid"],
+                    new_msgstr=data["new_msgstr"],
+                )
                 self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↷ Redone")
@@ -820,6 +854,7 @@ class POTranslatorApp:
             target=settings['target'],
             auto_detect=settings['auto_detect']
         )
+        self.translator.set_offline_mode(settings.get("offline_mode", self.translator.offline_mode))
 
         if changed:
             self.invalidate_language_analysis()

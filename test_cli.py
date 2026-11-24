@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import shutil
 import tempfile
 import unittest
@@ -16,6 +17,16 @@ from po_translator import cli
 
 
 class CLITestCase(unittest.TestCase):
+    def test_installed_cli_entry_point(self) -> None:
+        result = subprocess.run(
+            ["po-translator", "--help"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Translate Odoo gettext PO files", result.stdout)
+
     def setUp(self) -> None:
         self.tmpdir = tempfile.mkdtemp(prefix="po_translator_cli_")
         self.sample = Path(self.tmpdir) / "sample.po"

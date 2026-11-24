@@ -51,7 +51,7 @@ class EditDialog:
             font=THEME.font(size=18, weight="bold"),
         ).pack(side="left", padx=25, pady=15)
         
-        module = self.merger.indexer.get_module(self.entry.msgid)
+        module = self.merger.indexer.get_module(self.entry)
         ctk.CTkLabel(
             header,
             text=f"Module: {module}",

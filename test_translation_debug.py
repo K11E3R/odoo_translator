@@ -34,18 +34,10 @@ def _iter_cases() -> Iterable[str]:
 
 
 def _require_api_key() -> str:
-    api_key = os.getenv('GEMINI_API_KEY')
-    if api_key:
-        return api_key
-
-    config_file = os.path.join(os.path.dirname(__file__), '.config')
-    if os.path.exists(config_file):
-        with open(config_file, 'r', encoding='utf-8') as handle:
-            return handle.read().strip()
-    raise SystemExit(
-        "ERROR: No API key found!\n"
-        "Set GEMINI_API_KEY environment variable or create .config file"
-    )
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise SystemExit("Set GEMINI_API_KEY or GOOGLE_API_KEY in the environment.")
+    return api_key
 
 
 def _run_debug(translator) -> None:
@@ -55,7 +47,7 @@ def _run_debug(translator) -> None:
 
     api_key = _require_api_key()
     translator.set_api_key(api_key)
-    translator.set_languages(source_lang='en', target_lang='fr', auto_detect=True)
+    translator.configure_languages(source='en', target='fr', auto_detect=True)
 
     test_cases = list(_iter_cases())
     print(f"\nTesting {len(test_cases)} translations...\n")
