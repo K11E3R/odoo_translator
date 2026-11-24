@@ -10,7 +10,7 @@ from ..theme import THEME
 class Sidebar:
     """Sidebar component with controls and statistics"""
     
-    def __init__(self, parent, callbacks):
+    def __init__(self, parent, callbacks, offline_mode=False):
         """
         Initialize sidebar
         
@@ -20,6 +20,7 @@ class Sidebar:
         """
         self.parent = parent
         self.callbacks = callbacks
+        self.offline_mode_var = ctk.BooleanVar(value=offline_mode)
         self.translation_enabled = False
         self.has_selection = False
         self.btn_delete = None
@@ -128,9 +129,19 @@ class Sidebar:
             height=35
         )
         
+        self.offline_mode_check = ctk.CTkCheckBox(
+            self.frame,
+            text="Offline glossary mode (no API calls)",
+            variable=self.offline_mode_var,
+            command=self.callbacks.get("offline_mode_changed"),
+            font=THEME.font(size=11),
+            text_color=THEME.TEXT_MUTED,
+        )
+        self.offline_mode_check.grid(row=9, column=0, padx=20, pady=(0, 8), sticky="w")
+
         # Language selection
         lang_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
-        lang_frame.grid(row=9, column=0, padx=20, pady=(10, 8), sticky="ew")
+        lang_frame.grid(row=10, column=0, padx=20, pady=(10, 8), sticky="ew")
         lang_frame.grid_columnconfigure(0, weight=1)
         lang_frame.grid_columnconfigure(1, weight=1)
         
@@ -192,7 +203,7 @@ class Sidebar:
             font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED
         )
-        self.auto_detect_check.grid(row=10, column=0, padx=20, pady=(0, 8), sticky="w")
+        self.auto_detect_check.grid(row=11, column=0, padx=20, pady=(0, 8), sticky="w")
         
         self.btn_translate = ctk.CTkButton(
             self.frame,
@@ -205,7 +216,7 @@ class Sidebar:
             corner_radius=8,
             state="disabled"
         )
-        self.btn_translate.grid(row=11, column=0, padx=20, pady=(15, 8), sticky="ew")
+        self.btn_translate.grid(row=12, column=0, padx=20, pady=(15, 8), sticky="ew")
         
         self.btn_translate_selected = ctk.CTkButton(
             self.frame,
@@ -218,14 +229,14 @@ class Sidebar:
             corner_radius=8,
             state="disabled"
         )
-        self.btn_translate_selected.grid(row=12, column=0, padx=20, pady=(0, 0), sticky="ew")
+        self.btn_translate_selected.grid(row=13, column=0, padx=20, pady=(0, 0), sticky="ew")
     
     def create_actions_section(self):
         """Create actions section"""
-        self.create_section_label("ACTIONS", 13)
+        self.create_section_label("ACTIONS", 14)
         
         actions_frame = ctk.CTkFrame(self.frame, fg_color="transparent")
-        actions_frame.grid(row=14, column=0, padx=20, pady=(0, 8), sticky="ew")
+        actions_frame.grid(row=15, column=0, padx=20, pady=(0, 8), sticky="ew")
         actions_frame.grid_columnconfigure(0, weight=1)
         actions_frame.grid_columnconfigure(1, weight=1)
         
@@ -268,7 +279,7 @@ class Sidebar:
         self.create_button(
             "📊  Statistics",
             self.callbacks['show_statistics'],
-            15,
+            16,
             THEME.ACCENT_PRIMARY,
             hover=THEME.ACCENT_PRIMARY_HOVER,
             height=38
@@ -276,10 +287,10 @@ class Sidebar:
     
     def create_stats_section(self):
         """Create statistics section"""
-        self.create_section_label("STATISTICS", 16)
+        self.create_section_label("STATISTICS", 17)
         
         stats_frame = ctk.CTkFrame(self.frame, fg_color=THEME.SURFACE_ALT, corner_radius=12)
-        stats_frame.grid(row=17, column=0, padx=20, pady=(0, 10), sticky="ew")
+        stats_frame.grid(row=18, column=0, padx=20, pady=(0, 10), sticky="ew")
 
         self.lbl_total = self.create_stat_label(stats_frame, "Total Entries", "0", 0)
         self.lbl_translated = self.create_stat_label(stats_frame, "✅ Translated", "0", 1, THEME.ACCENT_SUCCESS)
@@ -289,7 +300,7 @@ class Sidebar:
     def create_footer(self):
         """Create footer"""
         footer = ctk.CTkFrame(self.frame, fg_color="transparent")
-        footer.grid(row=18, column=0, padx=20, pady=20, sticky="s")
+        footer.grid(row=19, column=0, padx=20, pady=20, sticky="s")
         
         ctk.CTkLabel(
             footer,
@@ -432,6 +443,7 @@ class Sidebar:
         return {
             'source': lang_map.get(self.source_lang_var.get(), 'en'),
             'target': lang_map.get(self.target_lang_var.get(), 'fr'),
-            'auto_detect': self.auto_detect_var.get()
+            'auto_detect': self.auto_detect_var.get(),
+            'offline_mode': self.offline_mode_var.get(),
         }
 
