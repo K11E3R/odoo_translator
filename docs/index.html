@@ -4,13 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Odoo PO Translator — Localization workbench for Odoo developers</title>
-    <meta name="description" content="Review and localize Odoo gettext .po files with Gemini AI or a small local phrasebook for common English, French and Spanish Odoo terms." />
+    <meta name="description" content="For Odoo developers and implementation partners: localize module .po files with Gemini-assisted translation, context-aware PO merging, and a reviewable desktop or CLI workflow." />
     <meta name="author" content="Yassine Naanani" />
     <meta name="theme-color" content="#f6f5f1" />
     <link rel="canonical" href="https://k11e3r.github.io/odoo_translator/" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Odoo PO Translator — Localization workbench for Odoo developers" />
-    <meta property="og:description" content="Review and translate Odoo gettext files. Gemini-powered online translation, PO safeguards and a limited offline phrasebook." />
+    <meta property="og:description" content="Localize Odoo module PO files with Gemini-assisted translation, context-aware merging, desktop review and a limited offline phrasebook." />
     <meta property="og:url" content="https://k11e3r.github.io/odoo_translator/" />
     <meta property="og:image" content="https://k11e3r.github.io/odoo_translator/social-preview.svg" />
     <link rel="icon" href="brand/mark.svg" type="image/svg+xml" />
@@ -268,13 +268,13 @@
     <main>
       <section class="hero intro">
         <div class="wrap hero__in">
-          <p class="eyebrow"><span class="dot"></span>100% free &amp; open source</p>
-          <h1>AI-powered translation <br />for <em>Odoo developers</em></h1>
-          <p class="lead">Inspect, translate and export Odoo <code>.po</code> files. Use Gemini for AI-assisted localization, or a limited local phrasebook for common English, French and Spanish terms.</p>
+          <p class="eyebrow"><span class="dot"></span>Open source · MIT licensed</p>
+          <h1>Less manual work for <em>Odoo localization</em></h1>
+          <p class="lead">For Odoo developers and implementation partners: review, merge and translate module <code>.po</code> files with Gemini-assisted translation, a desktop workbench and a CLI. A limited offline phrasebook covers selected EN↔FR and EN↔ES Odoo terms.</p>
           <div class="hero__cta">
-            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">
+            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator#install">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
-              View releases
+              Install from GitHub
             </a>
             <a class="btn btn--ghost" href="#tutorial">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
@@ -283,7 +283,7 @@
           </div>
           <div class="hero__meta">
             <span><b>MIT</b> licensed</span>
-            <span><b>Windows</b> .exe</span>
+            <span><b>Desktop</b> + CLI</span>
             <span><b>Gemini AI</b> + offline</span>
           </div>
         </div>
@@ -390,8 +390,8 @@
         <div class="wrap">
           <div class="band rv">
             <h2>Ready to speed up your <em>translations?</em></h2>
-            <p>Translate hundreds of entries in minutes. Free, open source, and yours to keep.</p>
-            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">Download v1.0 — it's free</a>
+            <p>Reduce repetitive localization work and review every translation before deploying it to Odoo.</p>
+            <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator#install">Read the installation guide</a>
           </div>
         </div>
       </section>
@@ -527,7 +527,7 @@
           ['Sidebar','import','Import files','Load multiple .po files from your Odoo modules. Files are automatically merged and deduplicated.',15.5,1.3,17,4.2],
           ['Sidebar','save','Save','Write translated entries back to the original .po file with full metadata preserved.',20.3,1.3,17,4.2],
           ['Sidebar','export','Export','Export translated files and compile them to .mo for Odoo deployment.',25.1,1.3,17,4.2],
-          ['Sidebar','api-key','API key','Store your Google Gemini API key locally to enable AI-powered translation.',34,1.3,17,7],
+          ['Sidebar','api-key','API key','Enter a Google Gemini API key for this session. The application does not write it to the repository.',34,1.3,17,7],
           ['Sidebar','language-select','Languages','Choose source and target languages. Auto-detection analyses your .po files and suggests the right pair.',41.5,1.3,17,9],
           ['Sidebar','translate-all','Translate all','Translate every eligible entry with the configured Gemini model, with request pacing and cache reuse.',49,1.3,17,4.2],
           ['Sidebar','translate-selected','Translate selected','Translate only the entries you picked — ideal for targeted updates.',53.8,1.3,17,4.2],
@@ -606,8 +606,8 @@
           ['detect','Local language hints','Lingua is used when installed, with a compact local fallback. Short strings can remain ambiguous.'],
           ['variable','Variable preservation','Automatically preserves placeholders like %(name)s, %s and {x} to keep your code functional.'],
           ['ui','Modern UI','A clean, professional interface built with CustomTkinter — intuitive from the first run.'],
-          ['cache','Smart caching','A local cache stores translations for instant reuse across all your projects.'],
-          ['chart','Detailed analytics','Track API usage, cache performance, errors and corrections in real time.'],
+          ['cache','Context-aware PO merging','Keep context-sensitive and plural gettext entries distinct when files are merged.'],
+          ['chart','Usage statistics','Review API usage, cache hits, failed requests and translation counts.'],
           ['batch','Batch processing','Import multiple .po files, translate hundreds of entries, and export with one click.']
         ];
         $('#feat-grid').innerHTML=feats.map(function(f,i){
