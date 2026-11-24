@@ -85,33 +85,39 @@ class POMerger:
 
     def update_entry(self, msgid, new_msgid=None, new_msgstr=None,
                      msgctxt=None, msgid_plural=None):
-        # GUI callers may pass the POEntry itself, avoiding ambiguity when the
-        # same msgid appears under different msgctxt/plural identities.
+        """Update an entry and rebuild identity-dependent indexes safely."""
         entry = msgid if hasattr(msgid, "msgid") else self.get_entry(msgid, msgctxt, msgid_plural)
         if entry is None:
             return False
+
         old_key = self.cleaner.entry_key(entry)
-        old_module = self.indexer.get_module(entry)
+        new_identity = (
+            old_key[0],
+            entry.msgid if new_msgid is None else new_msgid,
+            old_key[2],
+        )
+        collision = self.merged_entries.get(new_identity)
+        if new_identity != old_key and collision is not None and collision is not entry:
+            return False
+
+        old_source = self._entry_sources.pop(old_key, None)
         if new_msgstr is not None:
             entry.msgstr = new_msgstr
-        if new_msgid is not None and new_msgid != entry.msgid:
+        if new_msgid is not None:
             entry.msgid = new_msgid
+
         new_key = self.cleaner.entry_key(entry)
         if new_key != old_key:
-            if new_key in self.merged_entries and self.merged_entries[new_key] is not entry:
-                # Never silently collapse a user edit into another gettext entry.
-                entry.msgid, entry.msgctxt, entry.msgid_plural = old_key[1], (old_key[0] or None), (old_key[2] or None)
-                if new_msgstr is not None:
-                    entry.msgstr = ""
-                return False
             self.merged_entries.pop(old_key, None)
             self.merged_entries[new_key] = entry
-            old_source = self._entry_sources.pop(old_key, None)
-            if old_source:
-                self._entry_sources[new_key] = old_source
-        if old_module != "unknown":
-            source = self._entry_sources.get(new_key, f"addons/{old_module}/i18n/translation.po")
-            self.indexer.index_entry(entry, source, entry)
+        if old_source:
+            self._entry_sources[new_key] = old_source
+
+        # Rebuild all metadata indexes because their keys include the PO identity.
+        self.indexer.clear()
+        for key, indexed_entry in self.merged_entries.items():
+            source = self._entry_sources.get(key, "")
+            self.indexer.index_entry(indexed_entry, source, indexed_entry)
         return True
 
     def export_to_file(self, filepath, metadata=None):
