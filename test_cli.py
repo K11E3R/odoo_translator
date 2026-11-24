@@ -5,6 +5,7 @@ import subprocess
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import polib
@@ -26,6 +27,12 @@ class CLITestCase(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0)
         self.assertIn("Translate Odoo gettext PO files", result.stdout)
+
+    def test_gui_command_launches_desktop_app(self) -> None:
+        with mock.patch("po_translator.gui.POTranslatorApp") as app_class:
+            self.assertEqual(cli.main(["gui"]), 0)
+            app_class.assert_called_once_with()
+            app_class.return_value.run.assert_called_once_with()
 
     def setUp(self) -> None:
         self.tmpdir = tempfile.mkdtemp(prefix="po_translator_cli_")
