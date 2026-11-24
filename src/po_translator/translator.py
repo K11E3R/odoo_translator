@@ -366,6 +366,7 @@ class Translator:
                   context: str | None = None, max_retries: int = 1) -> str:
         if not text:
             return text
+        original_text = text
         # Preserve intentional whitespace in gettext strings. Translate only
         # the core text and reattach the exact original prefix/suffix.
         leading = text[:len(text) - len(text.lstrip())]
@@ -400,13 +401,13 @@ class Translator:
                 return leading + translated + trailing
             with self._stats_lock:
                 self.stats["failed_requests"] += 1
-            return text
+            return original_text
 
         if self.client is None:
             with self._stats_lock:
                 self.stats["failed_requests"] += 1
             self.logger.warning("Translation skipped: no Gemini API key/client configured")
-            return text
+            return original_text
 
         prompt = self._get_prompt(from_lang, to_lang, context) + "\n" + json.dumps(text, ensure_ascii=False)
         for attempt in range(max_retries + 1):
@@ -435,7 +436,7 @@ class Translator:
                 time.sleep(min(2 ** attempt, 4))
         with self._stats_lock:
             self.stats["failed_requests"] += 1
-        return text
+        return original_text
 
     def auto_translate_entry(self, entry: Any, module: str | None = None, force: bool = False) -> bool:
         msgid = getattr(entry, "msgid", "") or ""
