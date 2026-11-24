@@ -84,6 +84,26 @@ class OfflineTranslatorTests(unittest.TestCase):
         self.assertEqual(self.translator.translate(source, "en", "fr"), source)
         self.assertEqual(self.translator.get_stats()["failed_requests"], 1)
 
+
+    def test_online_translation_uses_gemini_interactions_api(self):
+        self.translator.set_offline_mode(False)
+        fake_client = mock.Mock()
+        fake_client.interactions.create.return_value.output_text = "Confirmer la commande"
+        self.translator.client = fake_client
+
+        result = self.translator.translate("Confirm the order", "en", "fr")
+
+        self.assertEqual(result, "Confirmer la commande")
+        fake_client.interactions.create.assert_called_once()
+        call = fake_client.interactions.create.call_args.kwargs
+        self.assertEqual(call["model"], self.translator.model_name)
+        self.assertIn("Confirm the order", call["input"])
+
+    def test_online_failure_preserves_original_whitespace(self):
+        self.translator.set_offline_mode(False)
+        source = "  a string with %(name)s  "
+        self.assertEqual(self.translator.translate(source, "en", "fr"), source)
+
     def test_cache_survives_new_instance_and_uses_hashed_keys(self):
         first = self.translator.translate("Customer", "en", "fr")
         second = Translator(
