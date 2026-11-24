@@ -56,7 +56,7 @@ class Sidebar:
         
         ctk.CTkLabel(
             header,
-            text="⚡ PO Translator",
+            text="Odoo PO Translator",
             font=THEME.font(size=24, weight="bold"),
             text_color=THEME.TEXT_PRIMARY
         ).pack(anchor="w")
@@ -304,7 +304,7 @@ class Sidebar:
         
         ctk.CTkLabel(
             footer,
-            text="v1.0 • Made with ❤️ for Odoo",
+            text="v1.1 • Open source for Odoo",
             font=THEME.font(size=11),
             text_color=THEME.TEXT_MUTED
         ).pack()
