@@ -497,9 +497,10 @@ class Translator:
             try:
                 if self.auto_translate_entry(entry, module, force=force):
                     results["translated"] += 1
-                elif self.stats["failed_requests"] > before_failures:
+                elif self.stats["failed_requests"] > before_failures and not self.offline_mode:
                     results["failed"] += 1
                 else:
+                    # Unknown glossary phrases intentionally remain unchanged.
                     results["skipped"] += 1
             except Exception:
                 results["failed"] += 1
