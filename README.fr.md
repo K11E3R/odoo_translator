@@ -108,7 +108,7 @@ Les tests ne nécessitent pas de clé Gemini. Les appels Gemini doivent être te
 
 - Stockez les clés API dans des variables d'environnement ou un gestionnaire de secrets.
 - Ne publiez jamais \`.config\`, \`.env\`, des clés API ou des fichiers PO clients.
-- En mode en ligne, les chaînes soumises sont envoyées à l'API Gemini de Google. Vérifiez les règles de traitement des données de votre organisation avant d'envoyer des informations confidentielles.
+- En mode en ligne, les chaînes soumises sont envoyées à l'API Gemini de Google. Les requêtes utilisent `store=False` afin de ne pas conserver l'historique des interactions côté serveur ; les traitements et règles de données habituels de Google restent applicables. Vérifiez les règles de votre organisation avant d'envoyer des informations confidentielles.
 - Le glossaire hors ligne n'effectue aucun appel à une API de traduction. La détection de langue est locale et ne télécharge pas de modèle lors de l'import.
 
 Consultez [SECURITY.md](SECURITY.md).
