@@ -1,25 +1,21 @@
-"""Test module imports"""
-import sys
-sys.path.insert(0, 'src')
+"""Core imports must work without optional GUI or network model downloads."""
+import unittest
 
-print("Testing imports...")
+import polib
+from google import genai
+from po_translator.core.cleaner import POCleaner
+from po_translator.core.indexer import ModuleIndexer
+from po_translator.core.merger import POMerger
+from po_translator.translator import Translator
+from po_translator.utils import language
 
-try:
-    import polib
-    print("✓ polib")
-    
-    import fasttext
-    print("✓ fasttext")
-    
-    from po_translator.utils.language import detect_language_details
-    print("✓ language detection")
-    
-    from po_translator.translator import Translator
-    print("✓ translator")
-    
-    print("\n✅ ALL IMPORTS SUCCESSFUL")
-    
-except Exception as e:
-    print(f"\n✗ Import failed: {e}")
-    sys.exit(1)
 
+class ImportTests(unittest.TestCase):
+    def test_core_components_import(self):
+        self.assertTrue(polib)
+        self.assertTrue(genai)
+        self.assertTrue(POCleaner)
+        self.assertTrue(ModuleIndexer)
+        self.assertTrue(POMerger)
+        self.assertTrue(Translator)
+        self.assertTrue(language.detect_language)
