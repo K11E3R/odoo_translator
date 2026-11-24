@@ -2,7 +2,7 @@
 polib>=1.2.0
 customtkinter>=5.2.0
 lingua-language-detector>=2.0.2
-google-genai>=2.0.0
+google-genai>=2.3.0
 
 # Development and tests
 pytest>=8.0
