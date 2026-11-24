@@ -418,6 +418,7 @@ class Translator:
                 interaction = self.client.interactions.create(
                     model=self.model_name,
                     input=prompt,
+                    store=False,
                 )
                 translated = (getattr(interaction, "output_text", None) or "").strip()
                 if self._validate_translation(text, translated):
