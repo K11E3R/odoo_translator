@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+<title id="title">Odoo PO Translator mark</title>
+<rect width="512" height="512" rx="112" fill="#111C29"/>
+<path d="M158 174c23-49 75-81 132-81 59 0 112 34 134 87" fill="none" stroke="#75E0B4" stroke-width="32" stroke-linecap="round"/>
+<path d="m388 130 49 50-69 15" fill="#75E0B4"/>
+<path d="M354 337c-23 49-75 81-132 81-59 0-112-34-134-87" fill="none" stroke="#2F8067" stroke-width="32" stroke-linecap="round"/>
+<path d="m124 381-49-50 69-15" fill="#2F8067"/>
+<path d="M177 189h158v54h-51v140h-56V243h-51z" fill="#F6F5F1"/>
+</svg>
