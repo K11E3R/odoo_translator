@@ -13,12 +13,12 @@ requires-python = ">=3.11"
 dependencies = [
   "polib>=1.2.0",
   "customtkinter>=5.2.0",
-  "lingua-language-detector>=2.0.2",
   "google-genai>=2.3.0"
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
+language-detection = ["lingua-language-detector>=2.0.2"]
 
 [project.scripts]
 po-translator = "po_translator.cli:main"
