@@ -434,8 +434,12 @@ class Translator:
         msgid = (getattr(entry, "msgid", "") or "").strip()
         if not msgid:
             return False
-        if not force and getattr(entry, "msgstr", "") and entry.msgstr != msgid:
-            return False
+        if not force:
+            if getattr(entry, "msgstr", "") and entry.msgstr != msgid:
+                return False
+            existing_plural = getattr(entry, "msgstr_plural", None) or {}
+            if existing_plural and all(value.strip() for value in existing_plural.values()):
+                return False
 
         if self.auto_detect:
             detected = detect_language(msgid)
