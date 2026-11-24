@@ -295,7 +295,7 @@ class Translator:
             "Return only the translated text. Preserve every placeholder, HTML/XML tag, "
             "newline and formatting token exactly. Do not add explanations or quotation marks.\n"
             f"Use these preferred Odoo terms where relevant: {glossary}\n\n"
-            "Translate the text between <source> and </source>:\n<source>"
+            "The next line contains the source text as a JSON-escaped string:\n"
         )
 
     def _rate_limit(self) -> None:
