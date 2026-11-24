@@ -17,7 +17,6 @@ try:
 except ImportError:  # Gemini is optional for offline-only installations.
     genai = None
 
-from po_translator.utils.file_utils import sanitize_text
 from po_translator.utils.language import detect_language, is_french_text
 from po_translator.utils.logger import get_logger
 
@@ -367,7 +366,15 @@ class Translator:
                   context: str | None = None, max_retries: int = 1) -> str:
         if not text:
             return text
-        text = sanitize_text(text)
+        # Preserve intentional whitespace in gettext strings. Translate only
+        # the core text and reattach the exact original prefix/suffix.
+        leading = text[:len(text) - len(text.lstrip())]
+        trailing = text[len(text.rstrip()):]
+        end = len(text) - len(trailing) if trailing else len(text)
+        core_text = text[len(leading):end]
+        if not core_text:
+            return text
+        text = core_text
         from_lang = from_lang or self.source_lang
         to_lang = to_lang or self.target_lang
         if from_lang not in self.LANGUAGES or to_lang not in self.LANGUAGES:
@@ -380,7 +387,7 @@ class Translator:
         if cached is not None:
             with self._stats_lock:
                 self.stats["cache_hits"] += 1
-            return cached
+            return leading + cached + trailing
 
         if self.offline_mode:
             with self._stats_lock:
@@ -390,7 +397,7 @@ class Translator:
                 self.cache.set(text, translated, cache_context)
                 with self._stats_lock:
                     self.stats["translated"] += 1
-                return translated
+                return leading + translated + trailing
             with self._stats_lock:
                 self.stats["failed_requests"] += 1
             return text
@@ -416,7 +423,7 @@ class Translator:
                     self.cache.set(text, translated, cache_context)
                     with self._stats_lock:
                         self.stats["translated"] += 1
-                    return translated
+                    return leading + translated + trailing
                 self.logger.warning("Rejected invalid translation (placeholder/markup mismatch)")
             except Exception:
                 with self._stats_lock:
@@ -431,8 +438,8 @@ class Translator:
         return text
 
     def auto_translate_entry(self, entry: Any, module: str | None = None, force: bool = False) -> bool:
-        msgid = (getattr(entry, "msgid", "") or "").strip()
-        if not msgid:
+        msgid = getattr(entry, "msgid", "") or ""
+        if not msgid.strip():
             return False
         if not force:
             if getattr(entry, "msgstr", "") and entry.msgstr != msgid:
@@ -442,7 +449,7 @@ class Translator:
                 return False
 
         if self.auto_detect:
-            detected = detect_language(msgid)
+            detected = detect_language(msgid.strip())
             if detected == self.target_lang and not force:
                 return False
             from_lang = detected if detected in self.LANGUAGES else self.source_lang
