@@ -109,6 +109,7 @@ class OfflineTranslatorTests(unittest.TestCase):
         call = fake_client.interactions.create.call_args.kwargs
         self.assertEqual(call["model"], self.translator.model_name)
         self.assertIn("Confirm the order", call["input"])
+        self.assertFalse(call["store"])
 
     def test_online_failure_preserves_original_whitespace(self):
         self.translator.set_offline_mode(False)
