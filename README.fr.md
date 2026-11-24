@@ -1,3 +1,7 @@
+![Odoo PO Translator](docs/brand/logo.svg)
+
+[English](README.md) · [Français](README.fr.md)
+
 # Odoo PO Translator
 
 Un environnement de travail de bureau et une interface en ligne de commande pour examiner et traduire les fichiers gettext \`.po\` utilisés par Odoo.
