@@ -4,119 +4,132 @@
 
 # Odoo PO Translator
 
-A desktop workbench and command-line tool for reviewing and translating Odoo gettext \`.po\` files.
+**For Odoo developers and implementation partners:** localize Odoo module `.po` files with Gemini-assisted translation, context-aware PO merging, and a reviewable desktop or command-line workflow.
+
+Use the tool to reduce repetitive localization work while keeping translated strings reviewable before they reach a production Odoo database. Online translation uses Google Gemini; the built-in offline glossary covers only selected English/French and English/Spanish Odoo terms.
 
 **Project:** [GitHub](https://github.com/K11E3R/odoo_translator) · **Website:** [Project site](https://k11e3r.github.io/odoo_translator/) · **License:** MIT · [Brand guide](docs/BRAND_GUIDE.md)
 
-> **Current scope:** online AI translation through Google's supported \`google-genai\` SDK, plus a small deterministic offline glossary for common English/French and English/Spanish Odoo terminology. The offline glossary is not a general-purpose machine-translation engine.
+## See the application
+
+![Odoo PO Translator desktop interface showing the translation table and controls](docs/screenshots/main-interface.png)
+
+*The desktop workbench for importing, reviewing, editing and exporting Odoo gettext files.*
 
 ## Features
 
 - Import, merge and export gettext/Odoo PO files.
 - Desktop UI built with CustomTkinter: search, filters, pagination, inline editing, undo/redo and export.
-- Gemini translation using the current Google Gen AI Python SDK.
-- Offline glossary assistance for common Odoo phrases and terms (EN↔FR and EN↔ES).
+- Gemini translation using Google's current Gen AI Python SDK.
+- Limited offline glossary assistance for selected Odoo phrases and terms (EN↔FR and EN↔ES); unmatched text stays unchanged.
 - Local language detection using compact heuristics; optional Lingua integration improves coverage when installed.
-- Preserve placeholders and markup validation before accepting AI output.
-- Translation cache with hashed keys, thread-safe access and atomic writes.
+- Placeholder and markup validation before accepting AI output.
+- Translation cache with hashed keys, thread-safe access within one process and atomic writes.
 - Command-line translation with dry-run, in-place and output-directory modes.
-- Preserve gettext contexts and plural-entry identity during merges.
+- Context-aware gettext merging that keeps plural entries distinct.
 
 ## Requirements
 
 - Python 3.11 or newer.
-- Tk support for the desktop UI (on Debian/Ubuntu: \`sudo apt install python3-tk\`).
-- A Gemini API key for online translation only.
+- Git, to install directly from this GitHub repository.
+- Tk support for the desktop UI (on Debian/Ubuntu: `sudo apt install python3-tk`).
+- A Gemini API key for online translation only; offline glossary mode does not need one.
 
 ## Install
 
-\`\`\`bash
-python -m venv .venv
-# macOS/Linux
-source .venv/bin/activate
-# Windows PowerShell
-# .venv\\Scripts\\Activate.ps1
+Install the application directly from GitHub in one command:
 
-python -m pip install --upgrade pip
-pip install -e ".[dev]"
-\`\`\`
+```bash
+python -m pip install "git+https://github.com/K11E3R/odoo_translator.git"
+```
 
-You can also install runtime requirements using \`pip install -r requirements.txt\`.
+Then launch the desktop application:
+
+```bash
+po-translator gui
+```
+
+The same installation provides the `po-translator` CLI. For an isolated install, use `pipx install "git+https://github.com/K11E3R/odoo_translator.git"` instead. On Debian/Ubuntu, install `python3-tk` first if Tk is missing.
 
 ### Optional language detection
 
-For richer local detection, install Lingua separately:
+For richer local detection, install the optional extra from a source checkout:
 
 ```bash
-pip install -e ".[language-detection]"
+python -m pip install -e ".[language-detection]"
 ```
 
 Without this extra, the application uses its built-in local heuristics and does not download a language model.
 
 ## Desktop application
 
-\`\`\`bash
-python app.py
-\`\`\`
+Start the installed desktop app with `po-translator gui`. Enter a Gemini API key in the application for online translation. The GUI key field is session-only; the application does not write the key into the repository.
 
-Enter a Gemini API key in the application for online translation. The GUI's API key field is session-only; the application does not write the key into the repository.
-
-To use the local glossary without an API key, enable **Offline glossary mode** in the sidebar. This mode makes no network requests. It only translates phrases/terms present in the bundled glossary; unknown text remains unchanged and is counted as a failed/unmatched translation.
+To use the local glossary without an API key, enable **Offline glossary mode** in the sidebar. This mode makes no network requests. It only translates phrases and terms present in the bundled glossary; unknown text remains unchanged and is reported as unmatched.
 
 ## Command line
 
-The package installs the \`po-translator\` command:
+Translate a PO file offline from English into French:
 
-\`\`\`bash
-# Offline glossary EN -> FR; preserve the input and create module.translated.po
+```bash
 po-translator translate module.po --source en --target fr --offline
+```
 
-# French -> English; write over the input file atomically
+Translate French into English and replace the input file atomically:
+
+```bash
 po-translator translate module.fr.po --source fr --target en --offline --in-place
+```
 
-# Online Gemini translation
+Use Gemini for online translation:
+
+```bash
 GEMINI_API_KEY="your-key" po-translator translate module.po --source en --target fr
+```
 
-# Choose an output directory
+Choose an output directory or validate without writing:
+
+```bash
 po-translator translate module.po --source en --target fr --output-dir build
-
-# Validate/count without writing
 po-translator translate module.po --source en --target fr --offline --dry-run
-\`\`\`
+```
 
 Environment variables:
 
-- \`GEMINI_API_KEY\` (or \`GOOGLE_API_KEY\`): Gemini Developer API key.
-- \`PO_TRANSLATOR_GEMINI_MODEL\`: model name; default is \`gemini-3.5-flash-lite\`.
-- \`PO_TRANSLATOR_OFFLINE_MODE=1\`: start the desktop app in offline glossary mode.
-- \`PO_TRANSLATOR_RATE_LIMIT\`: minimum seconds between API requests; default \`0.2\`.
+- `GEMINI_API_KEY` (or `GOOGLE_API_KEY`): Gemini Developer API key.
+- `PO_TRANSLATOR_GEMINI_MODEL`: model name; default is `gemini-3.5-flash-lite`.
+- `PO_TRANSLATOR_OFFLINE_MODE=1`: start the desktop app in offline glossary mode.
+- `PO_TRANSLATOR_RATE_LIMIT`: minimum seconds between API requests; default `0.2`.
 
 ## Translation safeguards
 
-Before accepting online output, the engine checks that the source and translation contain the same placeholder multiset (including repeated placeholders), HTML/XML tags, and newline count. Invalid output is retried and then rejected; the source string is left unchanged.
+Before accepting online output, the engine checks that the source and translation contain the same placeholder multiset (including repeated placeholders), HTML/XML tags and newline count. Invalid output is retried and then rejected; the source string is left unchanged.
 
-The cache is stored in \`~/.po_translator/translation_cache.json\`. Cache writes use a temporary file and atomic replacement. Cache keys are SHA-256 hashes, so source text is not embedded in cache-key filenames.
+The cache is stored in `~/.po_translator/translation_cache.json`. Cache writes use a temporary file and atomic replacement. Cache keys are SHA-256 hashes, so source text is not embedded in cache-key filenames.
 
 Offline glossary mode is deliberately conservative. It does not pretend to translate arbitrary prose. Use Gemini or a professional reviewer for full sentences and language pairs outside the glossary.
 
 ## PO file behavior
 
-Gettext entries are identified using \`msgctxt\`, \`msgid\` and \`msgid_plural\`. Merging therefore keeps context-sensitive entries and singular/plural entries distinct. Export uses polib and preserves the PO file metadata carried through import.
+Gettext entries are identified using `msgctxt`, `msgid` and `msgid_plural`. Merging therefore keeps context-sensitive entries and singular/plural entries distinct. Export uses polib and preserves the PO file metadata carried through import.
 
 Review translated files before deploying them to production Odoo databases. Always keep a copy of the original PO file.
 
 ## Development and tests
 
-\`\`\`bash
-python -m pytest
-\`\`\`
+For contributors working from a checkout:
 
-Tests do not require a Gemini key; Gemini calls should be tested separately with a controlled API key and a small test PO file.
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest
+```
+
+Tests do not require a Gemini key. Gemini calls should be tested separately with a controlled API key and a small test PO file.
 
 ## Security
 
 - Keep API keys in environment variables or a secrets manager.
-- Do not commit \`.config\`, \`.env\`, API keys or customer PO files.
+- Do not commit `.config`, `.env`, API keys or customer PO files.
 - Online translation sends submitted strings to Google's Gemini API. Requests use `store=False` so translation interactions are not retained as server-side conversation history; normal Google API processing and data policies still apply. Verify your organisation's data-processing requirements before using confidential text.
 - Offline glossary mode makes no translation API calls. Language detection is local and does not download models at import time.
 
@@ -131,8 +144,8 @@ See [SECURITY.md](SECURITY.md) for the security policy.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. Include a minimal PO fixture, expected result, actual result, and Python version. Do not attach customer data or credentials.
+Bug reports and pull requests are welcome. Include a minimal PO fixture, expected result, actual result and Python version. Do not attach customer data or credentials.
 
 ## Acknowledgements
 
-Built with [polib](https://github.com/izimobil/polib), [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), [Lingua](https://github.com/pemistahl/lingua-py), and the [Google Gen AI Python SDK](https://github.com/googleapis/python-genai).
+Built with [polib](https://github.com/izimobil/polib), [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter), [Lingua](https://github.com/pemistahl/lingua-py) and the [Google Gen AI Python SDK](https://github.com/googleapis/python-genai).
