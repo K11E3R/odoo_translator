@@ -17,10 +17,10 @@ class POCleaner:
         for entry in entries:
             if not validate_po_entry(entry):
                 continue
-            entry.msgid = sanitize_text(entry.msgid)
-            if not entry.msgid:
+            # Whitespace is part of gettext msgid/msgstr content; only use
+            # strip() to detect blank IDs, never rewrite the stored strings.
+            if not entry.msgid or not entry.msgid.strip():
                 continue
-            entry.msgstr = sanitize_text(getattr(entry, "msgstr", ""))
             cleaned.append(entry)
         return cleaned
 
