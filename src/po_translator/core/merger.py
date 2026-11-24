@@ -54,9 +54,11 @@ class POMerger:
                     continue
                 all_entries.append((entry, filepath))
 
-        cleaned_entries = self.cleaner.clean_entries([entry for entry, _path in all_entries])
-        # clean_entries preserves order; pair the original source paths by position.
-        for (entry, filepath) in zip(cleaned_entries, [path for _entry, path in all_entries]):
+        for raw_entry, filepath in all_entries:
+            cleaned = self.cleaner.clean_entries([raw_entry])
+            if not cleaned:
+                continue
+            entry = cleaned[0]
             key = self.cleaner.entry_key(entry)
             self.indexer.index_entry(entry, filepath, entry)
             self._entry_sources[key] = filepath
