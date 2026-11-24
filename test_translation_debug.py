@@ -47,7 +47,7 @@ def _run_debug(translator) -> None:
 
     api_key = _require_api_key()
     translator.set_api_key(api_key)
-    translator.set_languages(source_lang='en', target_lang='fr', auto_detect=True)
+    translator.configure_languages(source='en', target='fr', auto_detect=True)
 
     test_cases = list(_iter_cases())
     print(f"\nTesting {len(test_cases)} translations...\n")
