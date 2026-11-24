@@ -16,6 +16,7 @@ from po_translator.utils.language import is_untranslated
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="po-translator", description="Translate Odoo gettext PO files.")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("gui", help="Launch the desktop application.")
     translate = sub.add_parser("translate", help="Translate a .po file.")
     translate.add_argument("file", type=Path)
     translate.add_argument("--source", default="en", choices=sorted(Translator.LANGUAGES))
@@ -121,6 +122,11 @@ def translate_file(args) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "gui":
+        from po_translator.gui import POTranslatorApp
+
+        POTranslatorApp().run()
+        return 0
     if args.command == "translate":
         return translate_file(args)
     return 2
