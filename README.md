@@ -117,7 +117,7 @@ Tests do not require a Gemini key; Gemini calls should be tested separately with
 
 - Keep API keys in environment variables or a secrets manager.
 - Do not commit \`.config\`, \`.env\`, API keys or customer PO files.
-- Online translation sends the submitted strings to Google's Gemini API; verify your organisation's data-processing requirements before using confidential text.
+- Online translation sends submitted strings to Google's Gemini API. Requests use `store=False` so translation interactions are not retained as server-side conversation history; normal Google API processing and data policies still apply. Verify your organisation's data-processing requirements before using confidential text.
 - Offline glossary mode makes no translation API calls. Language detection is local and does not download models at import time.
 
 See [SECURITY.md](SECURITY.md) for the security policy.
