@@ -44,7 +44,7 @@ class ModuleIndexer:
                 module_name = match.group(1)
 
         if module_name == "unknown":
-            module_name = extract_module_name(filepath)
+            module_name = extract_module_name(str(filepath))
 
         for occ_file, _occ_line in (getattr(entry, "occurrences", []) or []):
             if "model:" not in occ_file:
