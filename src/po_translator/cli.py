@@ -10,6 +10,7 @@ from pathlib import Path
 import polib
 
 from po_translator.translator import Translator
+from po_translator.utils.language import is_untranslated
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -77,9 +78,8 @@ def translate_file(args) -> int:
     if args.dry_run:
         pending = [
             entry for entry in entries
-            if args.force or (
-                (not entry.msgstr or entry.msgstr == entry.msgid)
-                and not (entry.msgstr_plural and all(value.strip() for value in entry.msgstr_plural.values()))
+            if args.force or is_untranslated(
+                entry.msgid, entry.msgstr, entry.msgstr_plural, entry.msgid_plural
             )
         ]
         print(f"Entries: {len(entries)} | need translation: {len(pending)}")
