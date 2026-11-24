@@ -1,386 +1,479 @@
-"""
-Translator v1.0.0
- — Optimized for Odoo .po files
-- Gemini 2.5 Flash-Lite
-- Smart language detection (EN↔FR)
-- Skips redundant French→French
-- Odoo glossary-aware prompt
-- Caching, validation, retry
-- Compatible with test_translation_debug.py & app.py
-"""
+"""Reliable Odoo PO translation engine with Gemini and an explicit offline glossary mode."""
+from __future__ import annotations
 
-import time
+import hashlib
 import json
+import os
 import re
+import tempfile
+import threading
+import time
+from collections import Counter
 from pathlib import Path
+from typing import Any
 
 try:
-    import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
-    AVAILABLE = True
-except ImportError:
-    AVAILABLE = False
+    from google import genai
+except ImportError:  # Gemini is optional for offline-only installations.
+    genai = None
 
-# Using Lingua-py for best accuracy (93.3% vs FastText 66.7%)
-from po_translator.utils.language import is_french_text, is_english_text, detect_language
 from po_translator.utils.file_utils import sanitize_text
+from po_translator.utils.language import detect_language, is_french_text
 from po_translator.utils.logger import get_logger
 
 
-# ==========================================================
-# CACHE
-# ==========================================================
+PLACEHOLDER_RE = re.compile(
+    r"%\([^)]+\)[#0\- +]?[0-9]*(?:\.[0-9]+)?[diouxXeEfFgGcrsa]"
+    r"|%(?:[#0\- +]?[0-9]*(?:\.[0-9]+)?[diouxXeEfFgGcrsa])"
+    r"|\$\{[^{}]+\}|\{\{[^{}]+\}\}|\{[^{}]+\}"
+)
+HTML_TAG_RE = re.compile(r"</?[A-Za-z][^>]*?>")
+
+LANGUAGES = {
+    "en": "English", "fr": "French", "es": "Spanish", "de": "German",
+    "it": "Italian", "pt": "Portuguese", "nl": "Dutch", "ar": "Arabic",
+    "ca": "Catalan", "ro": "Romanian", "da": "Danish", "sv": "Swedish",
+    "no": "Norwegian", "fi": "Finnish", "gl": "Galician",
+}
+
+# Deterministic phrase/term lookup, not a claim of general-purpose machine translation.
+OFFLINE_PHRASES = {
+    ("en", "fr"): {
+        "confirm the order": "Confirmer la commande",
+        "please confirm the order": "Veuillez confirmer la commande",
+        "create a new order": "Créer une nouvelle commande",
+        "please enter your comments here": "Veuillez saisir vos commentaires ici",
+        "the total amount is calculated automatically": "Le montant total est calculé automatiquement",
+        "total amount is calculated automatically": "Le montant total est calculé automatiquement",
+        "are you sure you want to delete this record?": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
+        "purchase order": "Bon de commande", "purchase orders": "Bons de commande",
+        "invoice": "Facture", "delivery order": "Bon de livraison",
+        "delivery": "Livraison", "customer": "Client", "vendor": "Fournisseur",
+        "quotation": "Devis", "product": "Article", "partner": "Partenaire",
+        "payment": "Paiement", "warehouse": "Entrepôt", "sales": "Ventes",
+        "cancel": "Annuler", "stock": "Stock", "article": "Article",
+    },
+    ("fr", "en"): {
+        "bon de commande": "Purchase Order", "bons de commande": "Purchase Orders",
+        "facture": "Invoice", "livraison": "Delivery", "bon de livraison": "Delivery Order",
+        "client": "Customer", "fournisseur": "Vendor", "devis": "Quotation",
+        "article": "Product", "partenaire": "Partner", "paiement": "Payment",
+        "entrepôt": "Warehouse", "ventes": "Sales", "annuler": "Cancel",
+        "veuillez saisir vos commentaires ici": "Please enter your comments here",
+        "le montant total est calculé automatiquement": "The total amount is calculated automatically",
+        "créer une nouvelle commande": "Create a new order",
+        "confirmer la commande": "Confirm the order",
+        "veuillez confirmer la commande": "Please confirm the order",
+    },
+    ("en", "es"): {
+        "confirm the order": "Confirmar el pedido",
+        "create a new order": "Crear un nuevo pedido",
+        "purchase order": "Orden de compra", "invoice": "Factura",
+        "delivery": "Entrega", "customer": "Cliente", "vendor": "Proveedor",
+        "quotation": "Presupuesto", "product": "Producto", "partner": "Contacto",
+        "payment": "Pago", "warehouse": "Almacén", "sales": "Ventas", "cancel": "Cancelar",
+    },
+    ("es", "en"): {
+        "orden de compra": "Purchase Order", "factura": "Invoice",
+        "entrega": "Delivery", "cliente": "Customer", "proveedor": "Vendor",
+        "presupuesto": "Quotation", "producto": "Product", "contacto": "Partner",
+        "pago": "Payment", "almacén": "Warehouse", "ventas": "Sales",
+        "cancelar": "Cancel", "confirmar el pedido": "Confirm the order",
+        "crear un nuevo pedido": "Create a new order",
+    },
+}
+
+OFFLINE_WORDS = {
+    ("en", "fr"): {
+        "create": "Créer", "new": "nouveau", "invoice": "facture",
+        "order": "commande", "customer": "client", "vendor": "fournisseur",
+        "confirm": "confirmer", "cancel": "annuler", "delivery": "livraison",
+        "purchase": "achat", "payment": "paiement", "product": "article",
+        "please": "veuillez", "total": "total", "amount": "montant",
+    },
+    ("fr", "en"): {
+        "créer": "Create", "confirmer": "Confirm", "commande": "order",
+        "facture": "invoice", "client": "customer", "fournisseur": "vendor",
+        "livraison": "delivery", "annuler": "Cancel", "paiement": "payment",
+        "montant": "amount", "total": "total", "automatiquement": "automatically",
+        "veuillez": "Please", "saisir": "enter", "commentaires": "comments",
+    },
+    ("en", "es"): {
+        "create": "Crear", "new": "nuevo", "order": "pedido", "invoice": "factura",
+        "customer": "cliente", "vendor": "proveedor", "confirm": "confirmar",
+        "cancel": "cancelar", "delivery": "entrega", "payment": "pago",
+        "please": "por favor",
+    },
+    ("es", "en"): {
+        "crear": "Create", "pedido": "order", "factura": "invoice",
+        "cliente": "customer", "proveedor": "vendor", "confirmar": "confirm",
+        "cancelar": "Cancel", "entrega": "delivery", "pago": "payment",
+        "por": "please", "favor": "please",
+    },
+}
+
+
+def _normalise(value: str) -> str:
+    return " ".join(value.casefold().strip().split())
+
+
 class TranslationCache:
-    """Simple JSON cache for translations"""
-    def __init__(self, cache_file=None):
+    """Thread-safe JSON cache written atomically to avoid partial/corrupt files."""
+
+    def __init__(self, cache_file: str | Path | None = None):
         cache_dir = Path.home() / ".po_translator"
-        cache_dir.mkdir(exist_ok=True)
-        self.cache_file = cache_dir / (cache_file or "translation_cache.json")
-        self.cache = self._load_cache()
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_file = Path(cache_file) if cache_file else cache_dir / "translation_cache.json"
+        self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.RLock()
+        self.cache: dict[str, str] = self._load_cache()
 
-    def _load_cache(self):
-        if self.cache_file.exists():
-            try:
-                with open(self.cache_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                return {}
-        return {}
-
-    def _save(self):
+    def _load_cache(self) -> dict[str, str]:
         try:
-            with open(self.cache_file, "w", encoding="utf-8") as f:
-                json.dump(self.cache, f, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
+            payload = json.loads(self.cache_file.read_text(encoding="utf-8"))
+            return payload if isinstance(payload, dict) else {}
+        except FileNotFoundError:
+            return {}
+        except (OSError, json.JSONDecodeError):
+            return {}
 
-    def get(self, text, context=None):
-        return self.cache.get(f"{text}|{context or ''}")
+    @staticmethod
+    def _key(text: str, context: str | None = None) -> str:
+        raw = json.dumps([text, context or ""], ensure_ascii=False, separators=(",", ":"))
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-    def set(self, text, translation, context=None):
-        self.cache[f"{text}|{context or ''}"] = translation
-        self._save()
+    def _save(self) -> None:
+        temp_name = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w", encoding="utf-8", dir=self.cache_file.parent,
+                prefix=f".{self.cache_file.name}.", suffix=".tmp", delete=False
+            ) as handle:
+                temp_name = handle.name
+                json.dump(self.cache, handle, ensure_ascii=False, separators=(",", ":"))
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temp_name, self.cache_file)
+        except OSError:
+            if temp_name:
+                try:
+                    os.unlink(temp_name)
+                except OSError:
+                    pass
+            # Cache failures must not break translation.
 
-    def clear(self):
-        self.cache = {}
-        self._save()
+    def get(self, text: str, context: str | None = None) -> str | None:
+        with self._lock:
+            return self.cache.get(self._key(text, context))
+
+    def set(self, text: str, translation: str, context: str | None = None) -> None:
+        with self._lock:
+            self.cache[self._key(text, context)] = translation
+            self._save()
+
+    def clear(self) -> None:
+        with self._lock:
+            self.cache.clear()
+            self._save()
 
 
-# ==========================================================
-# TRANSLATOR
-# ==========================================================
 class Translator:
-    """Gemini-based translator for Odoo PO files"""
+    """Odoo-aware translator. Offline mode is phrase/glossary assistance, not free-form MT."""
 
-    LANGUAGES = {
-        "en": {"name": "English"},
-        "fr": {"name": "French"},
-        "es": {"name": "Spanish"},
-        "de": {"name": "German"},
-        "it": {"name": "Italian"},
-        "pt": {"name": "Portuguese"},
-        "nl": {"name": "Dutch"},
-        "ar": {"name": "Arabic"},
-        "ca": {"name": "Catalan"},
-        "ro": {"name": "Romanian"},
-        "da": {"name": "Danish"},
-        "sv": {"name": "Swedish"},
-        "no": {"name": "Norwegian"},
-        "fi": {"name": "Finnish"},
-        "gl": {"name": "Galician"},
-    }
-
+    LANGUAGES = {code: {"name": name} for code, name in LANGUAGES.items()}
     ODOO_TERMS = {
-        "fr": {
-            "Invoice": "Facture",
-            "Quotation": "Devis",
-            "Sales": "Ventes",
-            "Purchase Order": "Bon de commande",
-            "Delivery Order": "Livraison",
-            "Partner": "Partenaire",
-            "Customer": "Client",
-            "Vendor": "Fournisseur",
-            "Stock": "Stock",
-            "Warehouse": "Entrepôt",
-            "Payment": "Paiement",
-            "Accounting": "Comptabilité",
-        }
+        "fr": {"Invoice": "Facture", "Quotation": "Devis", "Sales": "Ventes",
+               "Purchase Order": "Bon de commande", "Delivery Order": "Bon de livraison",
+               "Partner": "Partenaire", "Customer": "Client", "Vendor": "Fournisseur"},
+        "en": {"Facture": "Invoice", "Devis": "Quotation", "Ventes": "Sales",
+               "Bon de commande": "Purchase Order", "Client": "Customer"},
     }
 
-    def __init__(self, api_key=None):
+    def __init__(self, api_key: str | None = None, cache: TranslationCache | None = None):
         self.logger = get_logger("po_translator.translator")
-        self.cache = TranslationCache()
-        self.api_key = api_key
-        self.model = None
-
+        self.cache = cache or TranslationCache()
+        self.api_key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self.model_name = os.getenv("PO_TRANSLATOR_GEMINI_MODEL", "gemini-3.5-flash-lite")
+        self.client: Any = None
+        self.model: Any = None  # Kept for compatibility with the GUI's availability check.
         self.source_lang = "en"
         self.target_lang = "fr"
         self.auto_detect = True
-
-        self.last_request = 0
-        self.rate_limit = 0.1  # ~10 requests/sec
-
-        # Stats
+        self.offline_mode = os.getenv("PO_TRANSLATOR_OFFLINE_MODE", "0").strip().lower() in {"1", "true", "yes", "on"}
+        self._rate_lock = threading.Lock()
+        self._stats_lock = threading.RLock()
+        self.last_request = 0.0
+        self.rate_limit = max(0.0, float(os.getenv("PO_TRANSLATOR_RATE_LIMIT", "0.2")))
         self.stats = {
-            "total_requests": 0,
-            "cache_hits": 0,
-            "api_calls": 0,
-            "errors": 0,
-            "retries": 0,
-            "auto_corrections": 0,
+            "total_requests": 0, "cache_hits": 0, "api_calls": 0,
+            "offline_requests": 0, "translated": 0, "failed_requests": 0,
+            "errors": 0, "retries": 0, "auto_corrections": 0,
         }
+        if self.api_key:
+            self.set_api_key(self.api_key)
 
-        if api_key and AVAILABLE:
-            self.set_api_key(api_key)
+    def set_offline_mode(self, enabled: bool | None = None) -> bool:
+        """Enable deterministic local glossary translation without any API calls."""
+        new_value = (
+            os.getenv("PO_TRANSLATOR_OFFLINE_MODE", "0").strip().lower() in {"1", "true", "yes", "on"}
+            if enabled is None else bool(enabled)
+        )
+        changed = new_value != self.offline_mode
+        self.offline_mode = new_value
+        return changed
 
-    # ------------------------------------------------------
-    # API setup
-    # ------------------------------------------------------
-    def set_api_key(self, api_key):
-        self.api_key = api_key
+    def set_api_key(self, api_key: str) -> bool:
+        self.api_key = (api_key or "").strip()
+        if not self.api_key:
+            self.client = self.model = None
+            return False
+        if genai is None:
+            self.logger.error("Gemini SDK missing. Install the google-genai package.")
+            self.client = self.model = None
+            return False
         try:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel(
-                "gemini-2.5-flash-lite",
-                generation_config={
-                    "temperature": 0.1,
-                    "max_output_tokens": 256,
-                    "top_p": 0.9,
-                    "top_k": 20,
-                },
-                safety_settings={
-                    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-                    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-                },
-            )
-            self.logger.info("✅ Translator initialized with Gemini 2.5 Flash-Lite")
-        except Exception as e:
-            self.logger.error(f"❌ Gemini initialization failed: {e}")
-            self.model = None
+            self.client = genai.Client(api_key=self.api_key)
+            self.model = self.client
+            self.logger.info("Gemini client initialized with model %s", self.model_name)
+            return True
+        except Exception:
+            self.logger.exception("Gemini client initialization failed")
+            self.client = self.model = None
+            return False
 
-    # ------------------------------------------------------
-    # Prompt generation
-    # ------------------------------------------------------
-    def _get_prompt(self, from_lang, to_lang, context=None):
-        """Context-aware Odoo prompt"""
-        from_name = self.LANGUAGES[from_lang]["name"]
-        to_name = self.LANGUAGES[to_lang]["name"]
-        ctx = f"Odoo module: {context}" if context else "Odoo ERP"
+    def configure_languages(self, source: str | None = None, target: str | None = None,
+                            auto_detect: bool | None = None) -> bool:
+        changed = False
+        if source is not None:
+            if source not in self.LANGUAGES:
+                raise ValueError(f"Unsupported source language: {source}")
+            if source != self.source_lang:
+                self.source_lang = source
+                changed = True
+        if target is not None:
+            if target not in self.LANGUAGES:
+                raise ValueError(f"Unsupported target language: {target}")
+            if target != self.target_lang:
+                self.target_lang = target
+                changed = True
+        if auto_detect is not None and bool(auto_detect) != self.auto_detect:
+            self.auto_detect = bool(auto_detect)
+            changed = True
+        return changed
 
-        glossary = json.dumps(self.ODOO_TERMS.get(to_lang, {}), ensure_ascii=False, indent=2)
+    def set_languages(self, source: str, target: str, auto_detect: bool = True) -> None:
+        self.configure_languages(source, target, auto_detect)
 
-        prompt = f"""
-You are an expert translator for Odoo ERP software.
+    def _get_prompt(self, from_lang: str, to_lang: str, context: str | None = None) -> str:
+        if from_lang not in self.LANGUAGES or to_lang not in self.LANGUAGES:
+            raise ValueError("Unsupported language code")
+        glossary = json.dumps(self.ODOO_TERMS.get(to_lang, {}), ensure_ascii=False)
+        return (
+            f"You are a professional Odoo ERP software translator. Translate from "
+            f"{self.LANGUAGES[from_lang]['name']} to {self.LANGUAGES[to_lang]['name']}.\n"
+            f"Context: {context or 'Odoo ERP'}.\n"
+            "Return only the translated text. Preserve every placeholder, HTML/XML tag, "
+            "newline and formatting token exactly. Do not add explanations or quotation marks.\n"
+            f"Use these preferred Odoo terms where relevant: {glossary}\n\n"
+            "Translate the text between <source> and </source>:\n<source>"
+        )
 
-Task:
-Translate the given text from {from_name} to {to_name}.
-Context: {ctx}
+    def _rate_limit(self) -> None:
+        # Serialize the check and update so concurrent GUI workers cannot burst together.
+        with self._rate_lock:
+            elapsed = time.monotonic() - self.last_request
+            if elapsed < self.rate_limit:
+                time.sleep(self.rate_limit - elapsed)
+            self.last_request = time.monotonic()
 
-Rules:
-1. Keep placeholders exactly (%(name)s, %s, {{x}}, etc.).
-2. Preserve HTML and newlines (\\n).
-3. Use professional, natural {to_name}.
-4. Only return the translation — no quotes, no explanation.
-5. Do NOT return the same text unless it's a real cognate like "Client" or "Stock".
-
-Glossary for consistent terminology:
-{glossary}
-"""
-        return prompt.strip()
-
-    # ------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------
-    def _rate_limit(self):
-        elapsed = time.time() - self.last_request
-        if elapsed < self.rate_limit:
-            time.sleep(self.rate_limit - elapsed)
-        self.last_request = time.time()
-
-    def _validate_translation(self, src, trans):
+    @staticmethod
+    def _validate_translation(src: str, trans: str) -> bool:
         if not trans or not trans.strip():
             return False
-        src_vars = set(re.findall(r"%\([^)]+\)s|%s|\{[^}]+\}|\$\{[^}]+\}", src))
-        trans_vars = set(re.findall(r"%\([^)]+\)s|%s|\{[^}]+\}|\$\{[^}]+\}", trans))
-        if src_vars != trans_vars:
-            self.logger.warning(f"Variable mismatch: {src_vars} vs {trans_vars}")
+        if Counter(PLACEHOLDER_RE.findall(src)) != Counter(PLACEHOLDER_RE.findall(trans)):
+            return False
+        if Counter(HTML_TAG_RE.findall(src)) != Counter(HTML_TAG_RE.findall(trans)):
+            return False
+        if src.count("\n") != trans.count("\n"):
             return False
         return True
 
-    def configure_languages(self, source=None, target=None, auto_detect=None):
-        """Configure source/target languages and auto-detection"""
-        changed = False
+    @staticmethod
+    def _offline_translate(text: str, from_lang: str, to_lang: str) -> str | None:
+        pair = (from_lang, to_lang)
+        phrases = OFFLINE_PHRASES.get(pair)
+        if not phrases:
+            return None
 
-        if source:
-            if source not in self.LANGUAGES:
-                self.logger.warning(f"Unsupported source language: {source}")
-            elif source != self.source_lang:
-                self.source_lang = source
-                changed = True
+        # Protect placeholders and markup before applying local terminology substitutions.
+        protected: list[str] = []
+        token_re = re.compile(
+            PLACEHOLDER_RE.pattern + r"|</?[A-Za-z][^>]*?>",
+        )
+        def protect(match: re.Match[str]) -> str:
+            protected.append(match.group(0))
+            return f"POKEEP{len(protected) - 1}TOKEN"
 
-        if target:
-            if target not in self.LANGUAGES:
-                self.logger.warning(f"Unsupported target language: {target}")
-            elif target != self.target_lang:
-                self.target_lang = target
-                changed = True
+        safe_text = token_re.sub(protect, text)
+        exact = phrases.get(_normalise(safe_text))
+        if exact is not None:
+            result = exact
+        else:
+            result = safe_text
+            for term in sorted(phrases, key=len, reverse=True):
+                if len(term) < 3:
+                    continue
+                result = re.sub(
+                    rf"(?<!\w){re.escape(term)}(?!\w)",
+                    phrases[term], result, flags=re.IGNORECASE
+                )
+            for term, replacement in sorted(OFFLINE_WORDS.get(pair, {}).items(), key=lambda item: len(item[0]), reverse=True):
+                result = re.sub(
+                    rf"(?<!\w){re.escape(term)}(?!\w)",
+                    replacement, result, flags=re.IGNORECASE
+                )
+        for index, original in enumerate(protected):
+            result = result.replace(f"POKEEP{index}TOKEN", original)
+        return result if result != text else None
 
-        if auto_detect is not None and auto_detect != self.auto_detect:
-            self.auto_detect = auto_detect
-            changed = True
-
-        if changed:
-            self.logger.info(
-                f"Language configuration updated: {self.source_lang} → {self.target_lang} (auto-detect={'on' if self.auto_detect else 'off'})"
-            )
-
-        return changed
-
-    def set_languages(self, source, target, auto_detect=True):
-        """Compatibility helper for legacy callers"""
-        self.configure_languages(source=source, target=target, auto_detect=auto_detect)
-
-    # ------------------------------------------------------
-    # Main translation
-    # ------------------------------------------------------
-    def translate(self, text, from_lang=None, to_lang=None, context=None, max_retries=1):
-        if not text or not self.model:
+    def translate(self, text: str, from_lang: str | None = None, to_lang: str | None = None,
+                  context: str | None = None, max_retries: int = 1) -> str:
+        if not text:
             return text
-
         text = sanitize_text(text)
         from_lang = from_lang or self.source_lang
         to_lang = to_lang or self.target_lang
-        self.stats["total_requests"] += 1
+        if from_lang not in self.LANGUAGES or to_lang not in self.LANGUAGES:
+            raise ValueError(f"Unsupported language pair: {from_lang} -> {to_lang}")
 
-        cache_key = f"{from_lang}→{to_lang}|{context or ''}"
-        cached = self.cache.get(text, cache_key)
-        if cached:
-            self.stats["cache_hits"] += 1
+        with self._stats_lock:
+            self.stats["total_requests"] += 1
+        cache_context = f"{from_lang}>{to_lang}|{context or ''}|{self.model_name}"
+        cached = self.cache.get(text, cache_context)
+        if cached is not None:
+            with self._stats_lock:
+                self.stats["cache_hits"] += 1
             return cached
 
+        if self.offline_mode:
+            with self._stats_lock:
+                self.stats["offline_requests"] += 1
+            translated = self._offline_translate(text, from_lang, to_lang)
+            if translated and self._validate_translation(text, translated):
+                self.cache.set(text, translated, cache_context)
+                with self._stats_lock:
+                    self.stats["translated"] += 1
+                return translated
+            with self._stats_lock:
+                self.stats["failed_requests"] += 1
+            return text
+
+        if self.client is None:
+            with self._stats_lock:
+                self.stats["failed_requests"] += 1
+            self.logger.warning("Translation skipped: no Gemini API key/client configured")
+            return text
+
+        prompt = self._get_prompt(from_lang, to_lang, context) + text + "\n</source>"
         for attempt in range(max_retries + 1):
             try:
                 self._rate_limit()
-                self.stats["api_calls"] += 1
-
-                prompt = self._get_prompt(from_lang, to_lang, context)
-                prompt += f"\n\nText: {text}\nTranslation:"
-                response = self.model.generate_content(prompt)
-                translation = response.text.strip().strip('"\'')
-                if "\n" in translation:
-                    translation = translation.split("\n")[0]
-
-                if self._validate_translation(text, translation):
-                    self.cache.set(text, translation, cache_key)
-                    self.logger.info(f"[OK] {text[:40]}... → {translation[:40]}...")
-                    return translation
-                else:
-                    if attempt < max_retries:
-                        self.logger.warning(f"Retrying invalid translation: {text[:40]}...")
-                        self.stats["retries"] += 1
-                        time.sleep(0.5)
-                        continue
-                    else:
-                        return text
-
-            except Exception as e:
-                self.stats["errors"] += 1
-                self.logger.error(f"Translation error: {e}")
-                if attempt < max_retries:
-                    time.sleep(1)
-                    continue
-                else:
-                    return text
-
+                with self._stats_lock:
+                    self.stats["api_calls"] += 1
+                response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=prompt,
+                    config={
+                        "temperature": 0.1,
+                        "max_output_tokens": 1024,
+                    },
+                )
+                translated = (getattr(response, "text", None) or "").strip()
+                if self._validate_translation(text, translated):
+                    self.cache.set(text, translated, cache_context)
+                    with self._stats_lock:
+                        self.stats["translated"] += 1
+                    return translated
+                self.logger.warning("Rejected invalid translation (placeholder/markup mismatch)")
+            except Exception:
+                with self._stats_lock:
+                    self.stats["errors"] += 1
+                self.logger.exception("Gemini translation request failed")
+            if attempt < max_retries:
+                with self._stats_lock:
+                    self.stats["retries"] += 1
+                time.sleep(min(2 ** attempt, 4))
+        with self._stats_lock:
+            self.stats["failed_requests"] += 1
         return text
 
-    # ------------------------------------------------------
-    # Auto translation for PO entry
-    # ------------------------------------------------------
-    def auto_translate_entry(self, entry, module=None, force=False):
-        """Auto-translate PO entry intelligently"""
-        if not self.model or not entry.msgid:
-            return False
-
-        msgid = entry.msgid.strip()
+    def auto_translate_entry(self, entry: Any, module: str | None = None, force: bool = False) -> bool:
+        msgid = (getattr(entry, "msgid", "") or "").strip()
         if not msgid:
             return False
-
-        # Skip if already translated
-        if entry.msgstr and entry.msgid != entry.msgstr and not force:
+        if not force and getattr(entry, "msgstr", "") and entry.msgstr != msgid:
             return False
 
-        # Skip if text already French and target is French
-        if not force and is_french_text(msgid) and self.target_lang == "fr":
-            self.logger.debug(f"Already French, skipping: {msgid[:40]}...")
-            return False
-
-        detected_lang = detect_language(msgid)
-        from_lang = self.source_lang
-
-        # Auto-detection logic
-        if self.auto_detect and detected_lang:
-            if detected_lang == self.target_lang:
-                if force:
-                    self.logger.warning(
-                        "Detected %s which matches target %s; proceeding due to override for: %s",
-                        detected_lang,
-                        self.target_lang,
-                        msgid[:40],
-                    )
-                else:
-                    self.logger.info(f"Detected {detected_lang} same as target, skipping: {msgid[:40]}")
-                    return False
-            elif detected_lang != self.source_lang:
-                self.logger.warning(
-                    f"Detected {detected_lang}, translating → {self.target_lang}: {msgid[:40]}..."
-                )
-                from_lang = detected_lang
+        if self.auto_detect:
+            detected = detect_language(msgid)
+            if detected == self.target_lang and not force:
+                return False
+            from_lang = detected if detected in self.LANGUAGES else self.source_lang
+        else:
+            from_lang = self.source_lang
 
         context = f"Odoo module: {module}" if module else "Odoo ERP"
-        translation = self.translate(msgid, from_lang=from_lang, to_lang=self.target_lang, context=context)
-        if translation and translation != msgid:
-            entry.msgstr = translation
-            return True
+        changed = False
 
-        return False
+        plural_forms = getattr(entry, "msgstr_plural", None)
+        if plural_forms:
+            for index in list(plural_forms):
+                source_text = msgid if str(index) in {"0", "1"} else (getattr(entry, "msgid_plural", None) or msgid)
+                result = self.translate(source_text, from_lang, self.target_lang, context)
+                if result != source_text:
+                    plural_forms[index] = result
+                    changed = True
+        else:
+            result = self.translate(msgid, from_lang, self.target_lang, context)
+            if result != msgid:
+                entry.msgstr = result
+                changed = True
 
-    # ------------------------------------------------------
-    # Batch processing
-    # ------------------------------------------------------
-    def batch_translate(self, entries, module=None, progress_callback=None, force=False):
-        """Translate multiple entries with stats"""
+        return changed
+
+    def batch_translate(self, entries, module: str | None = None, progress_callback=None, force=False):
         results = {"total": len(entries), "translated": 0, "skipped": 0, "failed": 0}
-        for i, entry in enumerate(entries):
+        for index, entry in enumerate(entries, start=1):
+            before_failures = self.stats["failed_requests"]
             try:
                 if self.auto_translate_entry(entry, module, force=force):
                     results["translated"] += 1
+                elif self.stats["failed_requests"] > before_failures:
+                    results["failed"] += 1
                 else:
                     results["skipped"] += 1
-            except Exception as e:
+            except Exception:
                 results["failed"] += 1
-                self.logger.error(f"Entry failed: {e}")
+                self.logger.exception("PO entry translation failed")
             if progress_callback:
-                progress_callback(i + 1, len(entries))
+                progress_callback(index, len(entries))
         return results
 
-    # ------------------------------------------------------
-    # Utilities
-    # ------------------------------------------------------
-    def get_stats(self):
-        total = max(1, self.stats["total_requests"])
-        return {
-            **self.stats,
-            "cache_hit_rate": f"{self.stats['cache_hits']/total*100:.1f}%",
-            "api_efficiency": f"{self.stats['api_calls']/total*100:.1f}%",
-            "cache_entries": len(self.cache.cache),
-        }
+    def get_stats(self) -> dict[str, Any]:
+        with self._stats_lock:
+            snapshot = dict(self.stats)
+        total = max(1, snapshot["total_requests"])
+        snapshot["cache_hit_rate"] = f"{snapshot['cache_hits'] / total * 100:.1f}%"
+        snapshot["api_efficiency"] = f"{snapshot['api_calls'] / total * 100:.1f}%"
+        snapshot["cache_entries"] = len(self.cache.cache)
+        snapshot["model"] = self.model_name
+        snapshot["offline_mode"] = self.offline_mode
+        return snapshot
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         self.cache.clear()
-        self.logger.info("✅ Cache cleared.")
 
-    def reset_stats(self):
-        for k in self.stats:
-            self.stats[k] = 0
-        self.logger.info("🔁 Stats reset.")
+    def reset_stats(self) -> None:
+        with self._stats_lock:
+            for key in self.stats:
+                self.stats[key] = 0
