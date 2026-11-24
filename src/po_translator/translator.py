@@ -462,8 +462,17 @@ class Translator:
 
         plural_forms = getattr(entry, "msgstr_plural", None)
         if plural_forms:
+            plural_source = getattr(entry, "msgid_plural", None) or msgid
             for index in list(plural_forms):
-                source_text = msgid if str(index) == "0" else (getattr(entry, "msgid_plural", None) or msgid)
+                source_text = msgid if str(index) == "0" else plural_source
+                current_translation = plural_forms.get(index, "")
+                if (
+                    not force
+                    and current_translation
+                    and current_translation.strip()
+                    and current_translation.strip() != source_text.strip()
+                ):
+                    continue
                 result = self.translate(source_text, from_lang, self.target_lang, context)
                 if result != source_text:
                     plural_forms[index] = result
