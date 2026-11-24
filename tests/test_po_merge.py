@@ -81,10 +81,11 @@ def test_editing_entry_rekeys_identity_and_rebuilds_module_index(tmp_path):
 
 def test_edit_rejects_identity_collision_without_mutating_entry():
     first = polib.POEntry(msgctxt="field", msgid="Name", msgstr="Nom")
-    second = polib.POEntry(msgctxt="view", msgid="Name", msgstr="Nom affiché")
+    second = polib.POEntry(msgctxt="field", msgid="Other", msgstr="Autre")
     merger = POMerger()
     merger.merged_entries[merger.cleaner.entry_key(first)] = first
     merger.merged_entries[merger.cleaner.entry_key(second)] = second
     assert not merger.update_entry(second, new_msgid="Name", new_msgstr="Changed")
-    assert second.msgctxt == "view"
-    assert second.msgstr == "Nom affiché"
+    assert second.msgctxt == "field"
+    assert second.msgid == "Other"
+    assert second.msgstr == "Autre"
