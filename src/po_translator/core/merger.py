@@ -85,7 +85,9 @@ class POMerger:
 
     def update_entry(self, msgid, new_msgid=None, new_msgstr=None,
                      msgctxt=None, msgid_plural=None):
-        entry = self.get_entry(msgid, msgctxt, msgid_plural)
+        # GUI callers may pass the POEntry itself, avoiding ambiguity when the
+        # same msgid appears under different msgctxt/plural identities.
+        entry = msgid if hasattr(msgid, "msgid") else self.get_entry(msgid, msgctxt, msgid_plural)
         if entry is None:
             return False
         old_key = self.cleaner.entry_key(entry)
@@ -96,14 +98,20 @@ class POMerger:
             entry.msgid = new_msgid
         new_key = self.cleaner.entry_key(entry)
         if new_key != old_key:
-            if new_key in self.merged_entries:
-                self.cleaner.merge_entries(self.merged_entries[new_key], entry)
-                del self.merged_entries[old_key]
-            else:
-                self.merged_entries[new_key] = entry
-                del self.merged_entries[old_key]
+            if new_key in self.merged_entries and self.merged_entries[new_key] is not entry:
+                # Never silently collapse a user edit into another gettext entry.
+                entry.msgid, entry.msgctxt, entry.msgid_plural = old_key[1], (old_key[0] or None), (old_key[2] or None)
+                if new_msgstr is not None:
+                    entry.msgstr = ""
+                return False
+            self.merged_entries.pop(old_key, None)
+            self.merged_entries[new_key] = entry
+            old_source = self._entry_sources.pop(old_key, None)
+            if old_source:
+                self._entry_sources[new_key] = old_source
         if old_module != "unknown":
-            self.indexer.index_entry(entry, f"addons/{old_module}/i18n/translation.po", entry)
+            source = self._entry_sources.get(new_key, f"addons/{old_module}/i18n/translation.po")
+            self.indexer.index_entry(entry, source, entry)
         return True
 
     def export_to_file(self, filepath, metadata=None):
