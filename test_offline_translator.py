@@ -59,7 +59,18 @@ class OfflineTranslatorTests(unittest.TestCase):
             msgid="Invoice",
             msgid_plural="Invoices",
             msgstr="",
-            msgstr_plural={0: "", 1: ""},
+            msgstr_plural={0: "Facture", 1: ""},
+        )
+        self.assertTrue(self.translator.auto_translate_entry(entry, module="account"))
+        self.assertEqual(entry.msgstr_plural[0], "Facture")
+        self.assertEqual(entry.msgstr_plural[1], "Factures")
+
+    def test_plural_source_identical_forms_are_translated(self):
+        entry = SimpleNamespace(
+            msgid="Invoice",
+            msgid_plural="Invoices",
+            msgstr="",
+            msgstr_plural={0: "Invoice", 1: "Invoices"},
         )
         self.assertTrue(self.translator.auto_translate_entry(entry, module="account"))
         self.assertEqual(entry.msgstr_plural[0], "Facture")
