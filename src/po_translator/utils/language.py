@@ -103,8 +103,15 @@ def is_french_text(text: str) -> bool:
 def is_english_text(text: str) -> bool:
     return detect_language(text) == "en"
 
-def is_untranslated(msgid: str, msgstr: str) -> bool:
-    return not msgstr or not msgstr.strip() or msgid.strip() == msgstr.strip()
+def is_untranslated(msgid: str, msgstr: str, msgstr_plural=None) -> bool:
+    """Return True when the singular translation and all plural forms are empty."""
+    if msgstr and msgstr.strip() and msgid.strip() != msgstr.strip():
+        return False
+    if msgstr_plural:
+        values = list(msgstr_plural.values())
+        if values and all(isinstance(value, str) and value.strip() for value in values):
+            return False
+    return True
 
 def extract_module_name(filepath: str) -> str:
     if not filepath:
