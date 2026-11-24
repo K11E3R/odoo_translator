@@ -69,11 +69,24 @@ def translate_file(args) -> int:
     translator = Translator(api_key=args.api_key)
     if args.model:
         translator.model_name = args.model
-    translator.set_offline_mode(args.offline)
+    if args.offline:
+        translator.set_offline_mode(True)
     translator.configure_languages(args.source, args.target, auto_detect=False)
 
-    translated = skipped = failed = 0
     entries = [entry for entry in po_file if args.include_obsolete or not entry.obsolete]
+    if args.dry_run:
+        pending = [
+            entry for entry in entries
+            if args.force or (
+                (not entry.msgstr or entry.msgstr == entry.msgid)
+                and not (entry.msgstr_plural and all(value.strip() for value in entry.msgstr_plural.values()))
+            )
+        ]
+        print(f"Entries: {len(entries)} | need translation: {len(pending)}")
+        print("Dry run: no translations requested, no API calls and no files written.")
+        return 0
+
+    translated = skipped = failed = 0
     for entry in entries:
         if not args.force and entry.msgstr and entry.msgstr != entry.msgid:
             skipped += 1
@@ -97,10 +110,7 @@ def translate_file(args) -> int:
     mode = "offline glossary" if translator.offline_mode else f"Gemini ({translator.model_name})"
     print(f"Mode: {mode}")
     print(f"Entries: {len(entries)} | translated: {translated} | skipped: {skipped} | failed: {failed}")
-    if args.dry_run:
-        print("Dry run: no files written.")
-    else:
-        print(f"Output: {destination}")
+    print(f"Output: {destination}")
     return 1 if failed else 0
 
 
