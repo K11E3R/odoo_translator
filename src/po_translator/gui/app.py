@@ -535,8 +535,12 @@ class POTranslatorApp:
                 'new_msgstr': new_msgstr
             })
             
-            entry.msgid = new_msgid
-            entry.msgstr = new_msgstr
+            if not self.merger.update_entry(entry, new_msgid=new_msgid, new_msgstr=new_msgstr):
+                messagebox.showerror(
+                    "Duplicate gettext entry",
+                    "This edit would create an entry with an existing context, msgid and plural identity.",
+                )
+                return
             self.unsaved = True
             self.invalidate_language_analysis(entries=[entry])
             self.populate()
@@ -701,7 +705,8 @@ class POTranslatorApp:
                     )
 
             after_failed = self.translator.get_stats().get("failed_requests", 0)
-            failed += max(0, after_failed - before_failed)
+            if not self.translator.offline_mode:
+                failed += max(0, after_failed - before_failed)
             self._last_translation_results = {
                 "translated": translated,
                 "failed": min(failed, total - translated),
@@ -741,8 +746,11 @@ class POTranslatorApp:
         if action:
             if action['action'] == 'edit':
                 data = action['data']
-                data['entry'].msgid = data['old_msgid']
-                data['entry'].msgstr = data['old_msgstr']
+                self.merger.update_entry(
+                    data["entry"],
+                    new_msgid=data["old_msgid"],
+                    new_msgstr=data["old_msgstr"],
+                )
                 self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↶ Undone")
@@ -753,8 +761,11 @@ class POTranslatorApp:
         if action:
             if action['action'] == 'edit':
                 data = action['data']
-                data['entry'].msgid = data['new_msgid']
-                data['entry'].msgstr = data['new_msgstr']
+                self.merger.update_entry(
+                    data["entry"],
+                    new_msgid=data["new_msgid"],
+                    new_msgstr=data["new_msgstr"],
+                )
                 self.invalidate_language_analysis(entries=[data['entry']])
                 self.populate()
                 self.statusbar.set_status("↷ Redone")
