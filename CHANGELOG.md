@@ -1,14 +1,21 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. The format
-roughly follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
-project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## Unreleased — reliability and localization corrections
 
-## [1.0.0] - 2025-10-30
 ### Added
-- Initial desktop release with Gemini 2.5 integration, offline glossary fallback,
-  and cache-backed translation safeguards for Odoo `.po` files.
-- Command-line interface (`po-translator`) mirroring GUI validation rules for
-  unattended translation workflows.
-- Expanded documentation covering offline usage, security posture, and project
-  lifecycle expectations for the first stable build.
+- Functional deterministic offline glossary mode for EN↔FR and EN↔ES.
+- A working \`po-translator\` CLI with dry-run, output directory and atomic in-place output.
+- French README translation.
+- GitHub Actions test workflow and a consistent pytest test suite.
+- SVG project identity assets.
+
+### Changed
+- Migrated from the legacy \`google-generativeai\` SDK to Google's supported \`google-genai\` SDK.
+- Made language detection local/offline at import time; removed automatic FastText model downloads and Google Translate detection.
+- Made cache access thread-safe and writes atomic.
+- Preserved placeholder multiplicity, markup and newline counts in AI-output validation.
+- Preserved gettext context and plural identity during PO merges.
+- Aligned runtime and packaging dependencies.
+
+### Security
+- Documented the actual online data flow and session-only GUI key handling.
