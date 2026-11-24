@@ -47,7 +47,7 @@ OFFLINE_PHRASES = {
         "total amount is calculated automatically": "Le montant total est calculé automatiquement",
         "are you sure you want to delete this record?": "Êtes-vous sûr de vouloir supprimer cet enregistrement ?",
         "purchase order": "Bon de commande", "purchase orders": "Bons de commande",
-        "invoice": "Facture", "delivery order": "Bon de livraison",
+        "invoice": "Facture", "invoices": "Factures", "delivery order": "Bon de livraison",
         "delivery": "Livraison", "customer": "Client", "vendor": "Fournisseur",
         "quotation": "Devis", "product": "Article", "partner": "Partenaire",
         "payment": "Paiement", "warehouse": "Entrepôt", "sales": "Ventes",
