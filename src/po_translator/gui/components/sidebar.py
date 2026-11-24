@@ -121,7 +121,7 @@ class Sidebar:
         self.api_key_entry.grid(row=7, column=0, padx=20, pady=(0, 8), sticky="ew")
         
         self.create_button(
-            "🔑  Save API Key",
+            "🔑  Use API Key (session only)",
             self.callbacks['save_api_key'],
             8,
             THEME.SURFACE_RAISED,
