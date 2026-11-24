@@ -442,11 +442,17 @@ class Translator:
         msgid = getattr(entry, "msgid", "") or ""
         if not msgid.strip():
             return False
+        plural_forms = getattr(entry, "msgstr_plural", None)
+        plural_source = getattr(entry, "msgid_plural", None) or msgid
         if not force:
-            if getattr(entry, "msgstr", "") and entry.msgstr != msgid:
-                return False
-            existing_plural = getattr(entry, "msgstr_plural", None) or {}
-            if existing_plural and all(value.strip() for value in existing_plural.values()):
+            if plural_forms:
+                if all(
+                    value and value.strip()
+                    and value.strip() != (msgid if str(index) == "0" else plural_source).strip()
+                    for index, value in plural_forms.items()
+                ):
+                    return False
+            elif getattr(entry, "msgstr", "") and entry.msgstr != msgid:
                 return False
 
         if self.auto_detect:
@@ -460,9 +466,7 @@ class Translator:
         context = f"Odoo module: {module}" if module else "Odoo ERP"
         changed = False
 
-        plural_forms = getattr(entry, "msgstr_plural", None)
         if plural_forms:
-            plural_source = getattr(entry, "msgid_plural", None) or msgid
             for index in list(plural_forms):
                 source_text = msgid if str(index) == "0" else plural_source
                 current_translation = plural_forms.get(index, "")
