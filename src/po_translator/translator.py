@@ -83,6 +83,26 @@ OFFLINE_PHRASES = {
     },
 }
 
+
+OFFLINE_PATTERNS = {
+    ("en", "fr"): [
+        (re.compile(r"^Create\s+(?P<value>%\([^)]+\)s|%s)\s+new invoice$", re.I),
+         r"Créer \g<value> nouvelle facture"),
+        (re.compile(r"^You have\s+(?P<value>%\([^)]+\)s|%s)\s+new messages$", re.I),
+         r"Vous avez \g<value> nouveaux messages"),
+        (re.compile(r"^Welcome\s+(?P<value>%\([^)]+\)s|%s)!$", re.I),
+         r"Bienvenue \g<value> !"),
+    ],
+    ("fr", "en"): [
+        (re.compile(r"^Bienvenue\s+(?P<value>%\([^)]+\)s|%s)\s*!$", re.I),
+         r"Welcome \g<value>!"),
+    ],
+    ("en", "es"): [
+        (re.compile(r"^Welcome\s+(?P<value>%\([^)]+\)s|%s)!$", re.I),
+         r"¡Bienvenido \g<value>!"),
+    ],
+}
+
 OFFLINE_WORDS = {
     ("en", "fr"): {
         "create": "Créer", "new": "nouveau", "invoice": "facture",
@@ -315,8 +335,15 @@ class Translator:
             return f"POKEEP{len(protected) - 1}TOKEN"
 
         safe_text = token_re.sub(protect, text)
+        exact_pattern = next(
+            (pattern.sub(replacement, text) for pattern, replacement in OFFLINE_PATTERNS.get(pair, [])
+             if pattern.fullmatch(text)),
+            None,
+        )
         exact = phrases.get(_normalise(safe_text))
-        if exact is not None:
+        if exact_pattern is not None:
+            result = exact_pattern
+        elif exact is not None:
             result = exact
         else:
             result = safe_text
@@ -374,21 +401,17 @@ class Translator:
             self.logger.warning("Translation skipped: no Gemini API key/client configured")
             return text
 
-        prompt = self._get_prompt(from_lang, to_lang, context) + text + "\n</source>"
+        prompt = self._get_prompt(from_lang, to_lang, context) + "\n" + json.dumps(text, ensure_ascii=False)
         for attempt in range(max_retries + 1):
             try:
                 self._rate_limit()
                 with self._stats_lock:
                     self.stats["api_calls"] += 1
-                response = self.client.models.generate_content(
+                interaction = self.client.interactions.create(
                     model=self.model_name,
-                    contents=prompt,
-                    config={
-                        "temperature": 0.1,
-                        "max_output_tokens": 1024,
-                    },
+                    input=prompt,
                 )
-                translated = (getattr(response, "text", None) or "").strip()
+                translated = (getattr(interaction, "output_text", None) or "").strip()
                 if self._validate_translation(text, translated):
                     self.cache.set(text, translated, cache_context)
                     with self._stats_lock:
@@ -428,7 +451,7 @@ class Translator:
         plural_forms = getattr(entry, "msgstr_plural", None)
         if plural_forms:
             for index in list(plural_forms):
-                source_text = msgid if str(index) in {"0", "1"} else (getattr(entry, "msgid_plural", None) or msgid)
+                source_text = msgid if str(index) == "0" else (getattr(entry, "msgid_plural", None) or msgid)
                 result = self.translate(source_text, from_lang, self.target_lang, context)
                 if result != source_text:
                     plural_forms[index] = result
