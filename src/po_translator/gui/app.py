@@ -526,7 +526,14 @@ class POTranslatorApp:
     def edit_entry(self, entry):
         """Edit entry"""
         def on_save(entry, old_msgid, old_msgstr, new_msgid, new_msgstr):
-            # Record undo
+            if not self.merger.update_entry(entry, new_msgid=new_msgid, new_msgstr=new_msgstr):
+                messagebox.showerror(
+                    "Duplicate gettext entry",
+                    "This edit would create an entry with an existing context, msgid and plural identity.",
+                )
+                return
+
+            # Record undo only after the merger accepts the new gettext identity.
             self.undo_manager.record('edit', {
                 'entry': entry,
                 'old_msgid': old_msgid,
@@ -534,13 +541,6 @@ class POTranslatorApp:
                 'new_msgid': new_msgid,
                 'new_msgstr': new_msgstr
             })
-            
-            if not self.merger.update_entry(entry, new_msgid=new_msgid, new_msgstr=new_msgstr):
-                messagebox.showerror(
-                    "Duplicate gettext entry",
-                    "This edit would create an entry with an existing context, msgid and plural identity.",
-                )
-                return
             self.unsaved = True
             self.invalidate_language_analysis(entries=[entry])
             self.populate()
