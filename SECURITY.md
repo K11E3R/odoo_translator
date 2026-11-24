@@ -1,48 +1,27 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-The PO Translator currently targets **Python 3.11+**. Security fixes are
-applied to the latest published minor release only.
+Security fixes are developed against the latest code on the default branch. There is currently no promise of maintenance for historical binary releases.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | ✅ Full support    |
-| < 1.0   | ❌ Unsupported     |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please report vulnerabilities privately to the repository owner rather than publishing exploit details in a public issue. Include a minimal reproduction, affected version, operating system and impact. Remove credentials and customer data from all reports.
 
-Please open a private issue or email the maintainer listed in `pyproject.toml`
-(or the repository owner) with detailed reproduction steps. Include the
-following where possible:
+## API keys
 
-- A minimal `.po` file that reproduces the issue
-- Operating system information
-- Whether offline mode or Gemini was used
+- Prefer \`GEMINI_API_KEY\` or \`GOOGLE_API_KEY\` environment variables, or a secrets manager.
+- The desktop API-key field is held in application memory and is not written to the repository.
+- Do not pass API keys in shell commands on shared systems because command history and process listings may expose them.
+- Revoke and rotate any key accidentally committed or shared.
 
-## API Key Handling
+## Data handling
 
-- Prefer setting the `GEMINI_API_KEY` environment variable in your shell or CI
-  secrets manager rather than committing keys to disk.
-- When using the GUI, the key is stored in memory only. If a `.config` file is
-  used for debugging, set permissions to `0600` to prevent accidental exposure.
-- The CLI accepts `--api-key` but still honours the environment variable to
-  simplify secure CI integration.
+- Online mode sends source strings to Google's Gemini API. Do not submit customer or confidential content unless your organisation has approved that data flow.
+- Offline glossary mode makes no translation API requests.
+- Language detection is local and does not download an external model at import time.
+- The translation cache is stored locally under \`~/.po_translator\`; remove it when disposing of a workstation or handling sensitive data.
 
-## Data Residency & Privacy
+## Supported behavior
 
-- Offline mode keeps all translations on the workstation and is recommended for
-  sensitive `.po` files.
-- When using Gemini, ensure your usage complies with Google's terms and your
-  organisation's data processing policies. The translator does not cache Gemini
-  responses beyond the local JSON cache in `~/.po_translator`.
-- Disable network-backed detection by setting
-  `PO_TRANSLATOR_USE_GOOGLE_DETECTION=0` when compliance requires fully offline
-  behaviour.
-
-## Rate Limiting & Abuse Protection
-
-- The translator enforces a ~10 req/s limit to stay within Gemini free tier
-  quotas. Adjust `Translator.rate_limit` carefully if you extend the project.
-- Monitor `translator.get_stats()` or the GUI statistics dialog to detect
-  unusual API usage patterns.
+The built-in offline glossary is not a full translation engine. Unknown phrases remain unchanged; check CLI summaries for failed/unmatched entries and review every generated PO file before deployment.
