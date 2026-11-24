@@ -71,7 +71,7 @@ class POTranslatorApp:
         
         # Window
         self.root = ctk.CTk()
-        self.root.title("PO Translator • Advanced Odoo Translation Tool")
+        self.root.title("Odoo PO Translator • Localization Workbench")
         self.root.geometry("1500x900")
 
         # Ensure window decorations are visible (for WSL/Linux)
