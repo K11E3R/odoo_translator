@@ -339,11 +339,16 @@ class POTranslatorApp:
         missing_translation = is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None))
 
         trans_lang, trans_conf = (None, 0.0)
-        if not missing_translation and msgstr:
+        plural_sample = " ".join(
+            value for value in (getattr(entry, "msgstr_plural", {}) or {}).values()
+            if value and value.strip()
+        )
+        translation_sample = msgstr or plural_sample
+        if not missing_translation and translation_sample:
             # Use context for translation too, with expected target as hint
             trans_context = [msgid] + context_texts[:4] if context_texts else [msgid]
             trans_lang, trans_conf = detect_language_with_context(
-                msgstr,
+                translation_sample,
                 context_texts=trans_context,
                 min_confidence=0.3,
                 expected_language=expected_target  # Use expected target as hint
@@ -370,7 +375,7 @@ class POTranslatorApp:
 
         self._language_analysis_cache[entry_id] = (
             msgid,
-            msgstr,
+            translation_sample,
             expected_source,
             expected_target,
             status,
