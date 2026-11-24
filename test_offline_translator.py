@@ -65,6 +65,20 @@ class OfflineTranslatorTests(unittest.TestCase):
         self.assertEqual(entry.msgstr_plural[0], "Facture")
         self.assertEqual(entry.msgstr_plural[1], "Factures")
 
+    def test_translation_preserves_leading_and_trailing_whitespace(self):
+        source = "  Customer\\n"
+        self.assertEqual(
+            self.translator.translate(source, "en", "fr"),
+            "  Client\\n",
+        )
+
+    def test_unknown_phrase_preserves_original_whitespace(self):
+        source = "  a phrase outside the glossary  "
+        self.assertEqual(
+            self.translator.translate(source, "en", "fr"),
+            source,
+        )
+
     def test_unknown_phrase_is_not_falsely_reported_as_translated(self):
         source = "This phrase is not in the bundled dictionary"
         self.assertEqual(self.translator.translate(source, "en", "fr"), source)
