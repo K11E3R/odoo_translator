@@ -32,7 +32,8 @@ class LanguageDetectionTests(unittest.TestCase):
     def test_plural_entries_are_pending_until_all_forms_exist(self):
         self.assertTrue(language.is_untranslated("Invoice", "", {0: "", 1: ""}))
         self.assertTrue(language.is_untranslated("Invoice", "", {0: "Invoice", 1: ""}))
-        self.assertFalse(language.is_untranslated("Invoice", "", {0: "Facture", 1: "Factures"}))
+        self.assertFalse(language.is_untranslated("Invoice", "", {0: "Facture", 1: "Factures"}, "Invoices"))
+        self.assertTrue(language.is_untranslated("Invoice", "", {0: "Facture", 1: "Invoices"}, "Invoices"))
 
     def test_detection_has_no_network_download_fallback(self):
         import inspect
