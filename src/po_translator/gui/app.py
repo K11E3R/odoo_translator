@@ -297,7 +297,10 @@ class POTranslatorApp:
         expected_target = self.translator.target_lang
 
         msgid = (entry.msgid or "").strip()
+        plural_forms = getattr(entry, "msgstr_plural", None) or {}
         msgstr = (entry.msgstr or "").strip()
+        if not msgstr and plural_forms:
+            msgstr = next((value.strip() for value in plural_forms.values() if value and value.strip()), "")
 
         cached = self._language_analysis_cache.get(entry_id)
         if cached:
@@ -445,7 +448,7 @@ class POTranslatorApp:
         else:
             self.filtered_entries = [
                 e for e in self.entries
-                if query in e.msgid.lower() or query in e.msgstr.lower()
+                if query in e.msgid.lower() or query in e.msgstr.lower() or any(query in value.lower() for value in getattr(e, "msgstr_plural", {}).values())
             ]
 
         self.current_page = 1
@@ -461,13 +464,13 @@ class POTranslatorApp:
         
         # Apply search
         if query:
-            base = [e for e in base if query in e.msgid.lower() or query in e.msgstr.lower()]
+            base = [e for e in base if query in e.msgid.lower() or query in e.msgstr.lower() or any(query in value.lower() for value in getattr(e, "msgstr_plural", {}).values())]
         
         # Apply filter
         if filter_type == "translated":
-            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr)]
+            self.filtered_entries = [e for e in base if not is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None))]
         elif filter_type == "untranslated":
-            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr)]
+            self.filtered_entries = [e for e in base if is_untranslated(e.msgid, e.msgstr, getattr(e, "msgstr_plural", None))]
         else:
             self.filtered_entries = base
 
@@ -566,7 +569,7 @@ class POTranslatorApp:
         seen_ids = set()
 
         for entry in self.entries:
-            if is_untranslated(entry.msgid, entry.msgstr):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
@@ -603,7 +606,7 @@ class POTranslatorApp:
             messagebox.showinfo("Translation in Progress", "Please wait for the current translation to finish.")
             return
 
-        if not self.translator.model:
+        if not self._translation_available():
             messagebox.showerror("Error", "Please save your API key first")
             return
         if self.table.get_selected_count() == 0:
@@ -625,7 +628,7 @@ class POTranslatorApp:
         entries_to_translate: List = []
         seen_ids = set()
         for entry in selected:
-            if is_untranslated(entry.msgid, entry.msgstr):
+            if is_untranslated(entry.msgid, entry.msgstr, getattr(entry, "msgstr_plural", None)):
                 entries_to_translate.append(entry)
                 seen_ids.add(id(entry))
 
@@ -713,7 +716,7 @@ class POTranslatorApp:
         """Translation complete"""
         self.translating = False
         self.populate()
-        self.sidebar.enable_translation_buttons()
+        self.update_translation_availability()
         results = getattr(self, "_last_translation_results", {"translated": 0, "failed": 0, "skipped": 0})
         self.unsaved = results["translated"] > 0
         stats = self.translator.get_stats()
