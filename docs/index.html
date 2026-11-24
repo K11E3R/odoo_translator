@@ -3,17 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PO Translator — AI translation for Odoo .po files</title>
-    <meta name="description" content="Fast, intelligent translation for Odoo .po files. Works online with Gemini AI or completely offline with built-in glossaries. Free and open source." />
+    <title>Odoo PO Translator — Localization workbench for Odoo developers</title>
+    <meta name="description" content="Review and localize Odoo gettext .po files with Gemini AI or a small local phrasebook for common English, French and Spanish Odoo terms." />
     <meta name="author" content="Yassine Naanani" />
     <meta name="theme-color" content="#f6f5f1" />
     <link rel="canonical" href="https://k11e3r.github.io/odoo_translator/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="PO Translator — AI translation for Odoo .po files" />
-    <meta property="og:description" content="Translate hundreds of Odoo .po entries in minutes. Online with Gemini AI or fully offline. Free and open source." />
+    <meta property="og:title" content="Odoo PO Translator — Localization workbench for Odoo developers" />
+    <meta property="og:description" content="Review and translate Odoo gettext files. Gemini-powered online translation, PO safeguards and a limited offline phrasebook." />
     <meta property="og:url" content="https://k11e3r.github.io/odoo_translator/" />
-    <meta property="og:image" content="https://k11e3r.github.io/odoo_translator/screenshots/main-interface.png" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233d6b5b'/%3E%3Ctext x='16' y='22' font-size='18' text-anchor='middle' fill='%23f6f5f1' font-family='Georgia,serif'%3EP%3C/text%3E%3C/svg%3E" />
+    <meta property="og:image" content="https://k11e3r.github.io/odoo_translator/social-preview.svg" />
+    <link rel="icon" href="brand/mark.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
@@ -250,7 +250,7 @@
     <header class="top" id="top">
       <div class="wrap top__in">
         <a class="brand" href="#top" aria-label="PO Translator, home">
-          <span class="brand__mark" aria-hidden="true">P</span><span>PO Translator</span>
+          <img class="brand__mark" src="brand/mark.svg" alt="" width="30" height="30" /><span>Odoo PO Translator</span>
         </a>
         <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav"><span></span></button>
         <nav class="nav" id="nav" aria-label="Main">
@@ -260,7 +260,7 @@
           <a href="#how">How it works</a>
           <a href="#faq">FAQ</a>
           <a href="https://github.com/K11E3R/odoo_translator" target="_blank" rel="noopener">GitHub</a>
-          <a class="btn btn--primary btn--sm" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">Download</a>
+          <a class="btn btn--primary btn--sm" href="https://github.com/K11E3R/odoo_translator/releases">Download</a>
         </nav>
       </div>
     </header>
@@ -270,11 +270,11 @@
         <div class="wrap hero__in">
           <p class="eyebrow"><span class="dot"></span>100% free &amp; open source</p>
           <h1>AI-powered translation <br />for <em>Odoo developers</em></h1>
-          <p class="lead">Fast, intelligent translation for Odoo <code>.po</code> files. Works online with Gemini AI or completely offline with built-in glossaries — translate hundreds of entries in minutes.</p>
+          <p class="lead">Inspect, translate and export Odoo <code>.po</code> files. Use Gemini for AI-assisted localization, or a limited local phrasebook for common English, French and Spanish terms.</p>
           <div class="hero__cta">
             <a class="btn btn--primary" href="https://github.com/K11E3R/odoo_translator/releases/download/v1.0/POTranslator.exe">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/></svg>
-              Download v1.0 (EXE)
+              View releases
             </a>
             <a class="btn btn--ghost" href="#tutorial">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
@@ -307,7 +307,7 @@
         <div class="wrap">
           <div class="sec-head rv">
             <p class="eyebrow" style="justify-content:center"><span class="dot"></span>Tutorial</p>
-            <h2>A whole module, translated in <em>twenty seconds</em></h2>
+            <h2>See the <em>PO localization workflow</em> in action</h2>
             <p>Watch the full flow, or jump straight to the step you need.</p>
           </div>
           <div class="player rv">
@@ -600,10 +600,10 @@
           batch:'<rect x="3" y="4" width="14" height="14" rx="2"/><path d="M7 20h11a2 2 0 0 0 2-2V8"/>'
         };
         var feats=[
-          ['ai','AI-powered translation','Google Gemini 2.5 Flash-Lite with Odoo-specific terminology for accurate, context-aware translations.'],
-          ['off','Offline mode','Built-in glossaries for EN↔FR and EN↔ES work completely without an internet connection.'],
-          ['fast','Lightning fast','70–90% cache hit rate means repeated translations are instant. Batch processing supported.'],
-          ['detect','Smart detection','95%+ accuracy in language detection using advanced ML models and heuristics.'],
+          ['ai','AI-assisted translation','Use Google Gemini through the current Gen AI SDK, with Odoo-aware prompts and configurable model selection.'],
+          ['off','Offline phrasebook','A small deterministic glossary covers selected EN↔FR and EN↔ES terms. Unknown phrases remain unchanged.'],
+          ['fast','Translation memory cache','A local, thread-safe cache reuses exact translations and avoids repeated requests for the same text.'],
+          ['detect','Local language hints','Lingua is used when installed, with a compact local fallback. Short strings can remain ambiguous.'],
           ['variable','Variable preservation','Automatically preserves placeholders like %(name)s, %s and {x} to keep your code functional.'],
           ['ui','Modern UI','A clean, professional interface built with CustomTkinter — intuitive from the first run.'],
           ['cache','Smart caching','A local cache stores translations for instant reuse across all your projects.'],
@@ -623,7 +623,7 @@
         /* ---------- steps (linked to tutorial chapters) ---------- */
         var steps=[
           ['Import files','Select .po files from your Odoo module. Files are automatically merged and deduplicated.',2.5,8,3.2],
-          ['Configure &amp; translate','Set your languages and translate all or selected entries — online or fully offline.',11,17.5,14.5],
+          ['Configure &amp; translate','Choose the source and target languages. Use Gemini online or the limited local phrasebook.',11,17.5,14.5],
           ['Export &amp; deploy','Export the translated .po/.mo files and copy them back into your Odoo module.',17.5,21,20.4]
         ];
         $('#steps').innerHTML=steps.map(function(s,i){
@@ -643,9 +643,9 @@
         var faqs=[
           ['Is PO Translator really free?','Yes — 100% free and open source under the MIT license. Use it for personal or commercial projects at no cost.'],
           ['Do I need an API key?','For online AI translation you need a free Google Gemini API key. For offline mode, no API key is needed.'],
-          ['Which languages are supported?','English, French, Spanish, German, Italian, Portuguese, Dutch and Arabic. Offline mode works for EN↔FR and EN↔ES.'],
-          ['Can I use it offline?','Yes — enable “Offline mode” to use the built-in glossaries for English↔French and English↔Spanish without internet.'],
-          ['How accurate are translations?','~95% accurate for Odoo-specific terminology. Always review translations before deploying to production.'],
+          ['Which languages are supported?','Language detection recognizes common Odoo languages. Gemini supports the language pairs requested in your prompt; the local phrasebook only covers selected EN↔FR and EN↔ES terms.'],
+          ['Can I use it offline?','Yes. Enable Offline glossary mode to translate matching entries from the bundled phrasebook. It is not a general-purpose translation model; unmatched text stays unchanged.'],
+          ['How accurate are translations?','No universal accuracy percentage is claimed. AI output and language detection can be wrong, and one-word strings are ambiguous. Review every translation before deploying to production.'],
           ['Can I contribute?','Absolutely — check the GitHub repository for issues and contribution guidelines. All contributions are welcome.']
         ];
         $('#faq-list').innerHTML=faqs.map(function(q){
