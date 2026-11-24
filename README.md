@@ -16,7 +16,7 @@ A desktop workbench and command-line tool for reviewing and translating Odoo get
 - Desktop UI built with CustomTkinter: search, filters, pagination, inline editing, undo/redo and export.
 - Gemini translation using the current Google Gen AI Python SDK.
 - Offline glossary assistance for common Odoo phrases and terms (EN↔FR and EN↔ES).
-- Language detection using Lingua when installed, with a local heuristic fallback.
+- Local language detection using compact heuristics; optional Lingua integration improves coverage when installed.
 - Preserve placeholders and markup validation before accepting AI output.
 - Translation cache with hashed keys, thread-safe access and atomic writes.
 - Command-line translation with dry-run, in-place and output-directory modes.
@@ -42,6 +42,16 @@ pip install -e ".[dev]"
 \`\`\`
 
 You can also install runtime requirements using \`pip install -r requirements.txt\`.
+
+### Optional language detection
+
+For richer local detection, install Lingua separately:
+
+```bash
+pip install -e ".[language-detection]"
+```
+
+Without this extra, the application uses its built-in local heuristics and does not download a language model.
 
 ## Desktop application
 
